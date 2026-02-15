@@ -187,17 +187,43 @@ st.title(t['baslik'])
 st.caption(t['altbaslik'])
 st.markdown("---")
 
+# Istatistikler - kartlar icinde
 st.subheader(t['istatistik'])
-k1, k2, k3, k4 = st.columns(4)
 
-with k1:
-    st.metric(t['eser'], len(st.session_state.zincir))
-with k2:
-    st.metric(t['kullanici'], "1")
-with k3:
-    st.metric(t['ai'], st.session_state.ai_sayac)
-with k4:
-    st.metric(t['transfer'], st.session_state.transfer_sayac)
+# Her metrik icin kart arka plani
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #667eea, #764ba2); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
+        <h3 style='color: white; margin: 0; font-size: 2rem;'>{}</h3>
+        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
+    </div>
+    """.format(len(st.session_state.zincir), t['eser']), unsafe_allow_html=True)
+
+with col2:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #11998e, #38ef7d); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
+        <h3 style='color: white; margin: 0; font-size: 2rem;'>1</h3>
+        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
+    </div>
+    """.format(t['kullanici']), unsafe_allow_html=True)
+
+with col3:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #f46b45, #eea849); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
+        <h3 style='color: white; margin: 0; font-size: 2rem;'>{}</h3>
+        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
+    </div>
+    """.format(st.session_state.ai_sayac, t['ai']), unsafe_allow_html=True)
+
+with col4:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #ee0979, #ff6a00); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
+        <h3 style='color: white; margin: 0; font-size: 2rem;'>{}</h3>
+        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
+    </div>
+    """.format(st.session_state.transfer_sayac, t['transfer']), unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -390,7 +416,8 @@ st.header(t['kaydet_yukle'])
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button(t['json_kaydet'], use_container_width=True):
+    st.subheader("💾 Yedekleme")
+    if st.button("📥 " + t['json_kaydet'], use_container_width=True, key="backup_btn"):
         veri = {
             'blockchain': st.session_state.zincir,
             'used_hashes': list(st.session_state.hashler),
@@ -402,7 +429,8 @@ with col1:
         st.download_button(t['json_indir'], json_veri, "backup.json", "application/json", use_container_width=True)
 
 with col2:
-    json_dosyasi = st.file_uploader(t['json_yukle'], type=['json'])
+    st.subheader("📂 " + t['json_yukle'])
+    json_dosyasi = st.file_uploader("JSON dosyası seç", type=['json'], label_visibility="collapsed")
     if json_dosyasi:
         try:
             veri = json.load(json_dosyasi)
