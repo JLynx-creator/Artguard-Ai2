@@ -173,12 +173,20 @@ st.markdown("---")
 
 # istatistikler
 st.subheader(t['stat'])
+
+# istatistik kutusu
+st.markdown(f"""
+<div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+""", unsafe_allow_html=True)
+
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric(t['eser'], len(st.session_state.zincir))
 c2.metric(t['user'], "1")
 c3.metric(t['ai'], st.session_state.ai_uyari)
 c4.metric(t['trans'], st.session_state.transfer)
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
