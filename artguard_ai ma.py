@@ -174,9 +174,9 @@ st.markdown("---")
 # istatistikler
 st.subheader(t['stat'])
 
-# istatistik kutusu
+# istatistik kutusu - tema renkli
 st.markdown(f"""
-<div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+<div style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 1.5rem; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-bottom: 2rem; border: 2px solid {c1};">
 """, unsafe_allow_html=True)
 
 c1, c2, c3, c4 = st.columns(4)
