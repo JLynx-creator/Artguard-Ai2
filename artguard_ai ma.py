@@ -402,7 +402,8 @@ st.header(t['data'])
 col_left, col_right = st.columns(2)
 
 with col_left:
-    if st.button(t['backup']):
+    st.write("")  # boşluk için
+    if st.button(t['backup'], use_container_width=True):
         data = {}
         data['blockchain'] = st.session_state.zincir
         data['used_hashes'] = list(st.session_state.hashler)
@@ -417,10 +418,11 @@ with col_left:
         data['transfers_count'] = st.session_state.transfer
         
         json_data = json.dumps(data, indent=2, ensure_ascii=False)
-        st.download_button(t['json_down'], json_data, "backup.json", "application/json")
+        st.download_button(t['json_down'], json_data, "backup.json", "application/json", use_container_width=True)
 
 with col_right:
-    json_file = st.file_uploader(t['load'], type=['json'])
+    st.write("")  # boşluk için
+    json_file = st.file_uploader(t['load'], type=['json'], label_visibility="collapsed")
     if json_file:
         try:
             data = json.load(json_file)
