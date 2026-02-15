@@ -73,7 +73,7 @@ with st.sidebar:
     st.markdown("---")
     secilen_dil = st.selectbox("🌍 Dil", ["Türkçe", "English"])
     st.markdown("---")
-    tema = st.selectbox("🎨 Tema", ["Mor-Mavi", "Yeşil-Mavi", "Turuncu-Kırmızı", "Pembe-Mor", "Koyu Mod"])
+    tema = st.selectbox("🎨 Tema", ["Mor-Mavi", "Yeşil-Mavi", "Turuncu-Kırmızı", "Pembe-Mor", "Koyu Mod", "Altın-Sarı", "Gümüş-Şehir", "Deniz-Mavin", "Gün Batımı", "Orman-Yeşil", "Lacivert-Gümüş", "Mercan-Turkuaz", "Eflatun-Gri", "Ateş-Kırmızı", "Buz-Mavi"], index=6)
     st.markdown("---")
     
     if st.button("🚪 Çıkış Yap", use_container_width=True):
@@ -86,7 +86,17 @@ temalar = {
     "Turuncu-Kırmızı": {'g1': '#f46b45', 'g2': '#eea849'},
     "Yeşil-Mavi": {'g1': '#11998e', 'g2': '#38ef7d'},
     "Pembe-Mor": {'g1': '#ee0979', 'g2': '#ff6a00'},
-    "Koyu Mod": {'g1': '#2c3e50', 'g2': '#34495e'}
+    "Koyu Mod": {'g1': '#2c3e50', 'g2': '#34495e'},
+    "Altın-Sarı": {'g1': '#f7971e', 'g2': '#ffd200'},
+    "Gümüş-Şehir": {'g1': '#bdc3c7', 'g2': '#2c3e50'},
+    "Deniz-Mavin": {'g1': '#2193b0', 'g2': '#6dd5ed'},
+    "Gün Batımı": {'g1': '#ff6b6b', 'g2': '#feca57'},
+    "Orman-Yeşil": {'g1': '#134e5e', 'g2': '#71b280'},
+    "Lacivert-Gümüş": {'g1': '#4b6cb7', 'g2': '#182848'},
+    "Mercan-Turkuaz": {'g1': '#ff6b9d', 'g2': '#c44569'},
+    "Eflatun-Gri": {'g1': '#8e44ad', 'g2': '#95a5a6'},
+    "Ateş-Kırmızı": {'g1': '#ff416c', 'g2': '#ff4b2b'},
+    "Buz-Mavi": {'g1': '#4facfe', 'g2': '#00f2fe'}
 }
 
 t_renk = temalar[tema]
@@ -94,7 +104,7 @@ t_renk = temalar[tema]
 st.markdown(f"""
 <style>
     .stApp {{
-        background: linear-gradient(135deg, {t_renk['g1']} 0%, {t_renk['g2']} 100%);
+        background: linear-gradient(135deg, {t_renk['g1']} 50%, {t_renk['g2']} 50%);
     }}
     .main .block-container {{
         background: white;
@@ -153,7 +163,7 @@ sozluk = {
         'kaydet_yukle': "💾 Veri Yönetimi", 'json_kaydet': "Yedekle",
         'json_indir': "İndir", 'json_yukle': "Geri Yükle",
         'yuklendi': "✅ Yüklendi!", 'hata': "Hata!",
-        'not': "Blockchain ile sahiplik kanıtlı, AI ile benzerlik tespit edilir."
+        'not': "Bu site NFT'lerin sahiplik kanıtı olarak blockchain kullanır ve AI ile benzerlik tespiti yapar."
     },
     'English': {
         'baslik': "🎨 ArtGuard AI",
@@ -187,43 +197,17 @@ st.title(t['baslik'])
 st.caption(t['altbaslik'])
 st.markdown("---")
 
-# Istatistikler - kartlar icinde
 st.subheader(t['istatistik'])
+k1, k2, k3, k4 = st.columns(4)
 
-# Her metrik icin kart arka plani
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #667eea, #764ba2); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
-        <h3 style='color: white; margin: 0; font-size: 2rem;'>{}</h3>
-        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
-    </div>
-    """.format(len(st.session_state.zincir), t['eser']), unsafe_allow_html=True)
-
-with col2:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #11998e, #38ef7d); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
-        <h3 style='color: white; margin: 0; font-size: 2rem;'>1</h3>
-        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
-    </div>
-    """.format(t['kullanici']), unsafe_allow_html=True)
-
-with col3:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #f46b45, #eea849); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
-        <h3 style='color: white; margin: 0; font-size: 2rem;'>{}</h3>
-        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
-    </div>
-    """.format(st.session_state.ai_sayac, t['ai']), unsafe_allow_html=True)
-
-with col4:
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #ee0979, #ff6a00); padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
-        <h3 style='color: white; margin: 0; font-size: 2rem;'>{}</h3>
-        <p style='color: rgba(255,255,255,0.9); margin: 0;'>{}</p>
-    </div>
-    """.format(st.session_state.transfer_sayac, t['transfer']), unsafe_allow_html=True)
+with k1:
+    st.metric(t['eser'], len(st.session_state.zincir))
+with k2:
+    st.metric(t['kullanici'], "1")
+with k3:
+    st.metric(t['ai'], st.session_state.ai_sayac)
+with k4:
+    st.metric(t['transfer'], st.session_state.transfer_sayac)
 
 st.markdown("---")
 
@@ -416,8 +400,7 @@ st.header(t['kaydet_yukle'])
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("💾 Yedekleme")
-    if st.button("📥 " + t['json_kaydet'], use_container_width=True, key="backup_btn"):
+    if st.button(t['json_kaydet'], use_container_width=True):
         veri = {
             'blockchain': st.session_state.zincir,
             'used_hashes': list(st.session_state.hashler),
@@ -429,8 +412,7 @@ with col1:
         st.download_button(t['json_indir'], json_veri, "backup.json", "application/json", use_container_width=True)
 
 with col2:
-    st.subheader("📂 " + t['json_yukle'])
-    json_dosyasi = st.file_uploader("JSON dosyası seç", type=['json'], label_visibility="collapsed")
+    json_dosyasi = st.file_uploader(t['json_yukle'], type=['json'])
     if json_dosyasi:
         try:
             veri = json.load(json_dosyasi)
