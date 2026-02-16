@@ -283,7 +283,24 @@ def sertifika_olustur(blok_data):
     cizim.rectangle([10, 10, genislik-10, yukseklik-10], outline=mavi_renk, width=5)
     cizim.rectangle([20, 20, genislik-20, yukseklik-20], outline=mavi_renk, width=2)
     
-    qr_veri = "NFT#" + str(blok_data['numara']) + "|" + blok_data['blok_hash'][:16]
+    # turkce karakter temizle
+    sahip_temiz = blok_data['sahip']
+    sahip_temiz = sahip_temiz.replace('ş','s').replace('Ş','S')
+    sahip_temiz = sahip_temiz.replace('ğ','g').replace('Ğ','G')
+    sahip_temiz = sahip_temiz.replace('ü','u').replace('Ü','U')
+    sahip_temiz = sahip_temiz.replace('ö','o').replace('Ö','O')
+    sahip_temiz = sahip_temiz.replace('ç','c').replace('Ç','C')
+    sahip_temiz = sahip_temiz.replace('ı','i').replace('İ','I')
+    
+    eser_temiz = blok_data['isim']
+    eser_temiz = eser_temiz.replace('ş','s').replace('Ş','S')
+    eser_temiz = eser_temiz.replace('ğ','g').replace('Ğ','G')
+    eser_temiz = eser_temiz.replace('ü','u').replace('Ü','U')
+    eser_temiz = eser_temiz.replace('ö','o').replace('Ö','O')
+    eser_temiz = eser_temiz.replace('ç','c').replace('Ç','C')
+    eser_temiz = eser_temiz.replace('ı','i').replace('İ','I')
+    
+    qr_veri = "NFT#" + str(blok_data['numara']) + "|" + blok_data['blok_hash'][:16] + "|Owner:" + sahip_temiz
     qr_kod = qrcode.QRCode(version=1, box_size=5, border=2)
     qr_kod.add_data(qr_veri)
     qr_kod.make(fit=True)
@@ -292,11 +309,11 @@ def sertifika_olustur(blok_data):
     resim.paste(qr_resim, (genislik - 180, 30))
     
     y_konum = 60
-    cizim.text((genislik//2 - 150, y_konum), "NFT SERTİFİKASI", fill=mavi_renk)
+    cizim.text((genislik//2 - 150, y_konum), "NFT SERTIFIKASI", fill=mavi_renk)
     y_konum = y_konum + 60
-    cizim.text((50, y_konum), "Eser Adi: " + blok_data['isim'], fill='black')
+    cizim.text((50, y_konum), "Eser Adi: " + eser_temiz, fill='black')
     y_konum = y_konum + 40
-    cizim.text((50, y_konum), "Sahip: " + blok_data['sahip'], fill='black')
+    cizim.text((50, y_konum), "Sahip: " + sahip_temiz, fill='black')
     y_konum = y_konum + 40
     cizim.text((50, y_konum), "Token No: #" + str(blok_data['numara']), fill='black')
     y_konum = y_konum + 40
@@ -324,11 +341,15 @@ if sayfa_secim == "Ana Sayfa":
     st.markdown("---")
     st.subheader("📤 Yeni Eser Yukle")
     
-    yuklenen_dosya = st.file_uploader("Dosya Sec", type=['jpg', 'jpeg', 'png'])
+    yuklenen_dosya = st.file_uploader("Dosya Sec", type=['jpg', 'jpeg', 'png'], key="dosya_yukle")
     
     if yuklenen_dosya:
+        # dosyayı yeniden okumak için sıfırla
+        yuklenen_dosya.seek(0)
         dosya_baytlari = yuklenen_dosya.read()
         dosya_hash = file_hash_calc(dosya_baytlari)
+        
+        st.write(f"**Dosya Hash:** `{dosya_hash[:20]}...`")
         
         kopya_var_mi = False
         for blok in veri['bloklar']:
@@ -342,6 +363,8 @@ if sayfa_secim == "Ana Sayfa":
             sol_kolon, sag_kolon = st.columns([2, 1])
             
             with sol_kolon:
+                # resmi göstermek için dosyayı yeniden başa sar
+                yuklenen_dosya.seek(0)
                 st.image(yuklenen_dosya, width=400)
             
             with sag_kolon:
@@ -351,6 +374,7 @@ if sayfa_secim == "Ana Sayfa":
                 # AI benzerlik kontrol - cakisma tespiti
                 if yuklenen_dosya.type.startswith('image'):
                     try:
+                        yuklenen_dosya.seek(0)
                         resim = Image.open(yuklenen_dosya)
                         resim_hash = img_hash_calc(resim)
                         
@@ -401,12 +425,12 @@ if sayfa_secim == "Ana Sayfa":
                         'fiyat': nft_fiyat,
                         'aciklama': nft_aciklama,
                         'satista': False,
-                        'resim_veri': base64.b64encode(dosya_baytlari).decode()
                     }
                     
                     # resim hash ekle - AI kontrol icin
                     if yuklenen_dosya.type.startswith('image'):
                         try:
+                            yuklenen_dosya.seek(0)
                             resim = Image.open(yuklenen_dosya)
                             yeni_blok['resim_hash'] = img_hash_calc(resim)
                         except Exception as img_err:
@@ -414,6 +438,10 @@ if sayfa_secim == "Ana Sayfa":
                             yeni_blok['resim_hash'] = None
                     else:
                         yeni_blok['resim_hash'] = None
+                    
+                    # resim verisini yeniden kodla
+                    yuklenen_dosya.seek(0)
+                    yeni_blok['resim_veri'] = base64.b64encode(yuklenen_dosya.read()).decode()
                     
                     # blok hash hesapla - kacinci blok oldugu onemli
                     yeni_blok['blok_hash'] = block_hash_calc(yeni_blok)
@@ -499,7 +527,7 @@ elif sayfa_secim == "NFT Koleksiyonum":
                                 if st.button("Sat", key="sat_buton_" + str(nft_numarasi)):
                                     nft_bilgi['satista'] = True
                                     veri['pazar'].append(nft_numarasi)
-                                    kayit_et(veri)
+                                    save_data(veri)
                                     st.success("Pazara eklendi!")
                                     st.rerun()
                         
@@ -548,7 +576,7 @@ elif sayfa_secim == "NFT Koleksiyonum":
                     veri['islemler'].append(transfer_islem)
                     
                     # kaydet
-                    kayit_et(veri)
+                    save_data(veri)
                     
                     st.success("Transfer tamamlandi!")
                     del st.session_state['transfer_nft']
@@ -616,7 +644,7 @@ elif sayfa_secim == "NFT Pazari":
                                     veri['islemler'].append(satis_islem)
                                     
                                     # kaydet
-                                    kayit_et(veri)
+                                    save_data(veri)
                                     
                                     st.success("Satin alma basarili!")
                                     st.balloons()
@@ -627,7 +655,7 @@ elif sayfa_secim == "NFT Pazari":
                             if st.button("Satisi Iptal Et", key="iptal_" + str(pazar_nft_no)):
                                 pazar_nft['satista'] = False
                                 veri['pazar'].remove(pazar_nft_no)
-                                kayit_et(veri)
+                                save_data(veri)
                                 st.success("Iptal edildi!")
                                 st.rerun()
                         
@@ -683,12 +711,12 @@ elif sayfa_secim == "📊 Blockchain Analizi":
         fig = blockchain_gorsel_olustur()
         canvas = FigureCanvasAgg(fig)
         canvas.draw()
-        img = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
-        st.image(img, use_container_width=True)
-        
         buf = BytesIO()
         fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
         buf.seek(0)
+        img = Image.open(buf)
+        st.image(img, use_container_width=True)
+        
         st.download_button("📥 Blockchain Görseli İndir", buf, "blockchain.png", "image/png")
         
     except Exception as e:
@@ -707,12 +735,12 @@ elif sayfa_secim == "📊 Blockchain Analizi":
             timeline_fig = timeline_gorsel_olustur(nft_numarasi)
             timeline_canvas = FigureCanvasAgg(timeline_fig)
             timeline_canvas.draw()
-            timeline_img = Image.frombytes('RGB', timeline_canvas.get_width_height(), timeline_canvas.tostring_rgb())
-            st.image(timeline_img, use_container_width=True)
-            
             timeline_buf = BytesIO()
             timeline_fig.savefig(timeline_buf, format='png', dpi=150, bbox_inches='tight')
             timeline_buf.seek(0)
+            timeline_img = Image.open(timeline_buf)
+            st.image(timeline_img, use_container_width=True)
+            
             st.download_button("📥 Timeline İndir", timeline_buf, f"timeline_{nft_numarasi}.png", "image/png")
             
         except Exception as e:
