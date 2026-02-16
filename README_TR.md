@@ -97,5 +97,5 @@ Bu eğitim projesidir, ancak önerileriniz için İletişim bölümünü kullana
 
 ## ⚡ Hızlı Linkler
 
-- [Streamlit Cloud'a Deploy Rehberi]
+- [https://artguardai.streamlit.app/]
 - [Proje Raporu](#) *(ekle)*
