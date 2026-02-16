@@ -1,18 +1,20 @@
 import streamlit as st
-import hashlib
-import json
-import datetime
+import hashlib as hl
+import json as js
+import datetime as dt
 from PIL import Image, ImageDraw
-import imagehash
-import qrcode
+import imagehash as ih
+import qrcode as qr
 from io import BytesIO
-import base64
-import os
-import time
+import base64 as b64
+import os as os_mod
+import time as tm
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+import random
+import string
 
 st.set_page_config(page_title="ArtGuard AI", page_icon="🎨", layout="wide")
 
@@ -20,18 +22,22 @@ DATA_F = 'veri.json'
 
 def hash_password(pwd):
     salt = "nft2024xyz"
-    return hashlib.sha256((pwd + salt).encode()).hexdigest()
+    try:
+        return hl.sha256((pwd + salt).encode()).hexdigest()
+    except Exception as e:
+        print(f"Hash error: {e}")
+        return hl.sha256(pwd.encode()).hexdigest()
 
 def load_data():
     data_file = DATA_F
-    if not os.path.exists(data_file):
+    if not os_mod.path.exists(data_file):
         initial_data = {
             'kullanicilar': {
                 'admin': {
                     'sifre_hash': hash_password('admin123'),
                     'nftler': [],
                     'para': 1000,
-                    'kayit_tarihi': str(datetime.datetime.now())
+                    'kayit_tarihi': str(dt.datetime.now())
                 }
             },
             'bloklar': [],
@@ -46,8 +52,8 @@ def load_data():
     
     try:
         with open(data_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except json.JSONDecodeError:
+            return js.load(f)
+    except js.JSONDecodeError:
         print("JSON hatasi - bos dosya olusturuluyor")
         return load_data()
     except Exception as e:
@@ -59,16 +65,19 @@ def save_data(data_obj):
     for attempt in range(max_retries):
         try:
             with open(DATA_F, 'w', encoding='utf-8') as f:
-                json.dump(data_obj, f, ensure_ascii=False, indent=2)
+                js.dump(data_obj, f, ensure_ascii=False, indent=2)
             return True
         except PermissionError:
             print(f"Permission hatasi - deneme {attempt + 1}")
-            time.sleep(0.1)
+            tm.sleep(0.1)
         except Exception as e:
             print(f"Kaydetme hatasi {attempt + 1}: {e}")
             if attempt == max_retries - 1:
                 return False
     return False
+
+def generate_random_id(length=8):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 if 'veri' not in st.session_state:
     st.session_state.veri = load_data()
@@ -120,18 +129,21 @@ if st.session_state.giris_yapildi == False:
                 elif yeni_kullanici in veri['kullanicilar']:
                     st.error("Bu kullanici adi alinmis!")
                 else:
+                    yeni_id = generate_random_id()
                     veri['kullanicilar'][yeni_kullanici] = {
                         'sifre_hash': hash_password(yeni_sifre1),
                         'nftler': [],
                         'para': 500,
-                        'kayit_tarihi': str(datetime.datetime.now())
+                        'kayit_tarihi': str(datetime.datetime.now()),
+                        'user_id': yeni_id
                     }
                     if save_data(veri):
                         st.success("Hesap olusturuldu!")
+                        st.balloons()
                     else:
-                        st.error("Kayit hatasi!")
+                        st.error("Hesap olusturulamadi!")
             else:
-                st.error("Tum alanlari doldurun!")
+                st.error("Bosluk birakma!")
     
     st.stop()
 
@@ -143,6 +155,25 @@ with st.sidebar:
     st.markdown("🎨 NFT Sayisi: " + str(len(aktif_kullanici['nftler'])))
     st.markdown("---")
     
+    # tema seçimi - session state'de tut
+    if 'secili_tema' not in st.session_state:
+        st.session_state.secili_tema = "Gümüş-Şehir"
+    
+    tema_secimi = st.selectbox("🎨 Tema", 
+        ["Mor-Mavi", "Turuncu-Kırmızı", "Yeşil-Mavi", "Pembe-Mor", "Koyu Mod", 
+         "Altın-Sarı", "Gümüş-Şehir", "Deniz-Mavin", "Gün Batımı", "Orman-Yeşil", 
+         "Lacivert-Gümüş", "Mercan-Turkuaz", "Eflatun-Gri", "Ateş-Kırmızı", "Buz-Mavi"],
+        index=["Mor-Mavi", "Turuncu-Kırmızı", "Yeşil-Mavi", "Pembe-Mor", "Koyu Mod", 
+               "Altın-Sarı", "Gümüş-Şehir", "Deniz-Mavin", "Gün Batımı", "Orman-Yeşil", 
+               "Lacivert-Gümüş", "Mercan-Turkuaz", "Eflatun-Gri", "Ateş-Kırmızı", "Buz-Mavi"].index(st.session_state.secili_tema)
+    )
+    
+    if tema_secimi != st.session_state.secili_tema:
+        st.session_state.secili_tema = tema_secimi
+        st.rerun()
+    
+    st.markdown("---")
+    
     sayfa_secim = st.radio("Sayfalar", ["Ana Sayfa", "NFT Koleksiyonum", "NFT Pazari", "Blockchain Kayitlari", "📊 Blockchain Analizi", "Profil"])
     
     st.markdown("---")
@@ -151,82 +182,143 @@ with st.sidebar:
         st.session_state.kullanici_adi = None
         st.rerun()
 
+# tema renkleri - session state'den oku
+temalar = {
+    "Mor-Mavi": {'g1': '#667eea', 'g2': '#764ba2'},
+    "Turuncu-Kırmızı": {'g1': '#f46b45', 'g2': '#eea849'},
+    "Yeşil-Mavi": {'g1': '#11998e', 'g2': '#38ef7d'},
+    "Pembe-Mor": {'g1': '#ee0979', 'g2': '#ff6a00'},
+    "Koyu Mod": {'g1': '#2c3e50', 'g2': '#34495e'},
+    "Altın-Sarı": {'g1': '#f7971e', 'g2': '#ffd200'},
+    "Gümüş-Şehir": {'g1': '#bdc3c7', 'g2': '#2c3e50'},
+    "Deniz-Mavin": {'g1': '#2193b0', 'g2': '#6dd5ed'},
+    "Gün Batımı": {'g1': '#ff6b6b', 'g2': '#feca57'},
+    "Orman-Yeşil": {'g1': '#134e5e', 'g2': '#71b280'},
+    "Lacivert-Gümüş": {'g1': '#4b6cb7', 'g2': '#182848'},
+    "Mercan-Turkuaz": {'g1': '#ff6b9d', 'g2': '#c44569'},
+    "Eflatun-Gri": {'g1': '#8e44ad', 'g2': '#95a5a6'},
+    "Ateş-Kırmızı": {'g1': '#ff416c', 'g2': '#ff4b2b'},
+    "Buz-Mavi": {'g1': '#4facfe', 'g2': '#00f2fe'}
+}
+
+secilen_tema = temalar[st.session_state.secili_tema]
+c1 = secilen_tema['g1']
+c2 = secilen_tema['g2']
+
+# CSS - tema renkli
+css_style = f"<style>.stApp{{background:linear-gradient(135deg,{c1},{c2});}}"
+css_style += ".main .block-container{background:white;border-radius:20px;padding:2rem;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-width:1200px;margin:0 auto;}"
+css_style += "h1{color:#2c3e50;text-align:center;}"
+css_style += "h2{color:#34495e;border-bottom:2px solid " + c1 + ";padding-bottom:0.5rem;}"
+css_style += ".stButton>button{background:linear-gradient(90deg," + c1 + "," + c2 + ");color:white;border-radius:20px;padding:0.6rem 2rem;border:none;}"
+css_style += "</style>"
+st.markdown(css_style, unsafe_allow_html=True)
+
 def file_hash_calc(file_bytes):
-    return hashlib.sha256(file_bytes).hexdigest()
+    try:
+        return hl.sha256(file_bytes).hexdigest()
+    except Exception as e:
+        print(f"File hash error: {e}")
+        return hl.sha256(str(file_bytes).encode()).hexdigest()
 
 def block_hash_calc(block_data):
-    combined = str(block_data['numara']) + block_data['zaman'] + block_data['sahip'] + block_data['dosya_hash']
-    if block_data['numara'] > 0:
-        combined += block_data['onceki_hash']
-    return hashlib.sha256(combined.encode()).hexdigest()
+    try:
+        combined = str(block_data['numara']) + block_data['zaman'] + block_data['sahip'] + block_data['dosya_hash']
+        if block_data['numara'] > 0:
+            combined += block_data['onceki_hash']
+        return hl.sha256(combined.encode()).hexdigest()
+    except Exception as e:
+        print(f"Block hash error: {e}")
+        return generate_random_id()
 
 def img_hash_calc(img_obj):
     try:
-        return str(imagehash.average_hash(img_obj))
-    except:
+        return str(ih.average_hash(img_obj))
+    except Exception as e:
+        print(f"Image hash error: {e}")
         return None
 
 def similarity_check(new_img_hash):
     max_similarity = 0
     match_index = -1
     
-    for i, block in enumerate(veri['bloklar']):
-        if 'resim_hash' not in block or block['resim_hash'] is None:
-            continue
-            
-        try:
-            old_hash = imagehash.hex_to_hash(block['resim_hash'])
-            new_hash = imagehash.hex_to_hash(new_img_hash)
-            diff = new_hash - old_hash
-            similarity = 100 * (1 - diff / 64.0)
-            
-            if similarity > max_similarity:
-                max_similarity = similarity
-                match_index = i
-        except:
-            pass
+    if new_img_hash is None:
+        return match_index, max_similarity
+    
+    try:
+        for i, blok in enumerate(veri['bloklar']):
+            if 'resim_hash' in blok and blok['resim_hash'] is not None:
+                old_hash = ih.hex_to_hash(str(blok['resim_hash']))
+                diff = new_img_hash - old_hash
+                similarity = 100 * (1 - diff / 64.0)
+                
+                if similarity > max_similarity:
+                    max_similarity = similarity
+                    match_index = i
+    except Exception as e:
+        print(f"Similarity check error: {e}")
+        pass
     
     return match_index, max_similarity
 
 def blockchain_gorsel_olustur():
     try:
-        fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 10)
+        fig, ax = plt.subplots(figsize=(14, 10))
+        ax.set_xlim(0, 12)
+        ax.set_ylim(0, 12)
         ax.axis('off')
         
         blok_sayisi = len(veri['bloklar'])
         if blok_sayisi == 0:
-            ax.text(5, 5, "Henüz blok yok", ha='center', va='center', fontsize=16)
+            ax.text(6, 6, "Henüz blok yok", ha='center', va='center', fontsize=18, weight='bold')
             return fig
         
-        max_goster = min(blok_sayisi, 8)
-        y_pos = 8
+        max_goster = min(blok_sayisi, 6)
+        y_pos = 10
         
         for i in range(max_goster):
             blok = veri['bloklar'][i]
             
-            renk = '#4CAF50' if i == 0 else '#2196F3'
-            rect = patches.Rectangle((1, y_pos), 8, 0.8, linewidth=2, edgecolor=renk, facecolor='lightgray')
+            # renkler - genesis ve normal bloklar
+            if i == 0:
+                renk = '#27ae60'  # yeşil - genesis
+                border_renk = '#229954'
+            else:
+                renk = '#3498db'  # mavi - normal
+                border_renk = '#2980b9'
+            
+            # blok kutusu
+            rect = patches.Rectangle((2, y_pos), 8, 1.2, linewidth=3, edgecolor=border_renk, facecolor=renk, alpha=0.8)
             ax.add_patch(rect)
             
-            ax.text(1.5, y_pos + 0.4, f"Blok #{blok['numara']}", fontsize=10, weight='bold')
-            ax.text(1.5, y_pos + 0.1, f"Sahip: {blok['sahip'][:10]}...", fontsize=8)
-            ax.text(6, y_pos + 0.4, f"Hash: {blok['blok_hash'][:12]}...", fontsize=8)
-            ax.text(6, y_pos + 0.1, f"Tarih: {blok['zaman'][:10]}", fontsize=8)
+            # blok içeriği
+            ax.text(2.5, y_pos + 0.8, f"🔗 BLOK #{blok['numara']}", fontsize=12, weight='bold', color='white')
+            ax.text(2.5, y_pos + 0.5, f"👤 {blok['sahip'][:12]}...", fontsize=10, color='white')
+            ax.text(2.5, y_pos + 0.2, f"💰 {blok['fiyat']} TL", fontsize=10, color='white')
             
+            ax.text(6, y_pos + 0.8, f"📅 {blok['zaman'][:10]}", fontsize=9, color='white')
+            ax.text(6, y_pos + 0.5, f"🔐 {blok['blok_hash'][:14]}...", fontsize=8, color='white')
+            ax.text(6, y_pos + 0.2, f"📁 {blok['dosya_hash'][:14]}...", fontsize=8, color='white')
+            
+            # oklar - bloklar arası bağlantı
             if i > 0:
-                ax.arrow(5, y_pos + 0.8, 0, 0.2, head_width=0.1, head_length=0.1, fc='red', ec='red')
+                ax.annotate('', xy=(6, y_pos + 1.2), xytext=(6, y_pos + 2.2),
+                           arrowprops=dict(arrowstyle='->', lw=3, color='#e74c3c', alpha=0.7))
             
-            y_pos -= 1.2
+            y_pos -= 2.0
         
-        ax.set_title("Blockchain Görselleştirme", fontsize=16, weight='bold', pad=20)
+        # başlık ve stil
+        ax.set_title("🔗 BLOCKCHAIN GÖRSELLEŞTİRME", fontsize=20, weight='bold', pad=30, color='#2c3e50')
+        
+        # arka plan
+        ax.add_patch(patches.Rectangle((0, 0), 12, 12, facecolor='#ecf0f1', alpha=0.3))
+        
         return fig
         
     except Exception as e:
         print(f"Gorsel hatasi: {e}")
-        fig, ax = plt.subplots(figsize=(12, 8))
-        ax.text(5, 5, "Gorsel olusturulamadi", ha='center', va='center', fontsize=16)
+        fig, ax = plt.subplots(figsize=(14, 10))
+        ax.text(7, 6, "Görsel oluşturulamadı", ha='center', va='center', fontsize=16)
         return fig
 
 def timeline_gorsel_olustur(nft_numarasi):
@@ -268,58 +360,60 @@ def timeline_gorsel_olustur(nft_numarasi):
     except Exception as e:
         print(f"Timeline hatasi: {e}")
         fig, ax = plt.subplots(figsize=(14, 8))
-        ax.text(7, 4, "Timeline olusturulamadi", ha='center', va='center', fontsize=14)
+        ax.text(7, 4, "Timeline oluşturulamadı", ha='center', va='center', fontsize=14)
         return fig
 
 def sertifika_olustur(blok_data):
-    genislik = 800
-    yukseklik = 600
-    
-    resim = Image.new('RGB', (genislik, yukseklik), 'white')
-    cizim = ImageDraw.Draw(resim)
-    
-    mavi_renk = (41, 128, 185)
-    
-    cizim.rectangle([10, 10, genislik-10, yukseklik-10], outline=mavi_renk, width=5)
-    cizim.rectangle([20, 20, genislik-20, yukseklik-20], outline=mavi_renk, width=2)
-    
-    # turkce karakter temizle
-    sahip_temiz = blok_data['sahip']
-    sahip_temiz = sahip_temiz.replace('ş','s').replace('Ş','S')
-    sahip_temiz = sahip_temiz.replace('ğ','g').replace('Ğ','G')
-    sahip_temiz = sahip_temiz.replace('ü','u').replace('Ü','U')
-    sahip_temiz = sahip_temiz.replace('ö','o').replace('Ö','O')
-    sahip_temiz = sahip_temiz.replace('ç','c').replace('Ç','C')
-    sahip_temiz = sahip_temiz.replace('ı','i').replace('İ','I')
-    
-    eser_temiz = blok_data['isim']
-    eser_temiz = eser_temiz.replace('ş','s').replace('Ş','S')
-    eser_temiz = eser_temiz.replace('ğ','g').replace('Ğ','G')
-    eser_temiz = eser_temiz.replace('ü','u').replace('Ü','U')
-    eser_temiz = eser_temiz.replace('ö','o').replace('Ö','O')
-    eser_temiz = eser_temiz.replace('ç','c').replace('Ç','C')
-    eser_temiz = eser_temiz.replace('ı','i').replace('İ','I')
-    
-    qr_veri = "NFT#" + str(blok_data['numara']) + "|" + blok_data['blok_hash'][:16] + "|Owner:" + sahip_temiz
-    qr_kod = qrcode.QRCode(version=1, box_size=5, border=2)
-    qr_kod.add_data(qr_veri)
-    qr_kod.make(fit=True)
-    qr_resim = qr_kod.make_image(fill_color="black", back_color="white")
-    qr_resim = qr_resim.resize((150, 150))
-    resim.paste(qr_resim, (genislik - 180, 30))
-    
-    y_konum = 60
-    cizim.text((genislik//2 - 150, y_konum), "NFT SERTIFIKASI", fill=mavi_renk)
-    y_konum = y_konum + 60
-    cizim.text((50, y_konum), "Eser Adi: " + eser_temiz, fill='black')
-    y_konum = y_konum + 40
-    cizim.text((50, y_konum), "Sahip: " + sahip_temiz, fill='black')
-    y_konum = y_konum + 40
-    cizim.text((50, y_konum), "Token No: #" + str(blok_data['numara']), fill='black')
-    y_konum = y_konum + 40
-    cizim.text((50, y_konum), "Tarih: " + blok_data['zaman'][:19], fill='gray')
-    
-    return resim
+    try:
+        genislik = 800
+        yukseklik = 600
+        
+        resim = Image.new('RGB', (genislik, yukseklik), 'white')
+        cizim = ImageDraw.Draw(resim)
+        
+        mavi_renk = (41, 128, 185)
+        
+        cizim.rectangle([10, 10, genislik-10, yukseklik-10], outline=mavi_renk, width=5)
+        cizim.rectangle([20, 20, genislik-20, yukseklik-20], outline=mavi_renk, width=2)
+        
+        # turkce karakter temizle
+        sahip_temiz = blok_data['sahip']
+        for k, v in [('ş','s'), ('Ş','S'), ('ğ','g'), ('Ğ','G'), ('ü','u'), ('Ü','U'), ('ö','o'), ('Ö','O'), ('ç','c'), ('Ç','C'), ('ı','i'), ('İ','I')]:
+            sahip_temiz = sahip_temiz.replace(k, v)
+        
+        eser_temiz = blok_data['isim']
+        for k, v in [('ş','s'), ('Ş','S'), ('ğ','g'), ('Ğ','G'), ('ü','u'), ('Ü','U'), ('ö','o'), ('Ö','O'), ('ç','c'), ('Ç','C'), ('ı','i'), ('İ','I')]:
+            eser_temiz = eser_temiz.replace(k, v)
+        
+        qr_veri = "NFT#" + str(blok_data['numara']) + "|" + blok_data['blok_hash'][:16] + "|Owner:" + sahip_temiz
+        qr_kod_obj = qr.QRCode(version=1, box_size=5, border=2)
+        qr_kod_obj.add_data(qr_veri)
+        qr_kod_obj.make(fit=True)
+        qr_resim = qr_kod_obj.make_image(fill_color="black", back_color="white")
+        qr_resim = qr_resim.resize((150, 150))
+        resim.paste(qr_resim, (genislik - 180, 30))
+        
+        y_konum = 60
+        cizim.text((genislik//2 - 150, y_konum), "NFT SERTIFIKASI", fill=mavi_renk)
+        y_konum = y_konum + 60
+        cizim.text((50, y_konum), "Eser Adi: " + eser_temiz, fill='black')
+        y_konum = y_konum + 40
+        cizim.text((50, y_konum), "Sahip: " + sahip_temiz, fill='black')
+        y_konum = y_konum + 40
+        cizim.text((50, y_konum), "Token No: #" + str(blok_data['numara']), fill='black')
+        y_konum = y_konum + 40
+        cizim.text((50, y_konum), "Tarih: " + blok_data['zaman'][:19], fill='gray')
+        
+        return resim
+    except Exception as e:
+        print(f"Sertifika hatasi: {e}")
+        # basit sertifika
+        genislik = 800
+        yukseklik = 600
+        resim = Image.new('RGB', (genislik, yukseklik), 'white')
+        cizim = ImageDraw.Draw(resim)
+        cizim.text((50, 50), f"NFT #{blok_data['numara']}", fill='black')
+        return resim
 
 if sayfa_secim == "Ana Sayfa":
     st.title("🏠 Ana Sayfa")
@@ -349,7 +443,8 @@ if sayfa_secim == "Ana Sayfa":
         dosya_baytlari = yuklenen_dosya.read()
         dosya_hash = file_hash_calc(dosya_baytlari)
         
-        st.write(f"**Dosya Hash:** `{dosya_hash[:20]}...`")
+        st.write(f"**Dosya Hash:** `{dosya_hash}`")
+        st.code(dosya_hash)
         
         kopya_var_mi = False
         for blok in veri['bloklar']:
@@ -385,8 +480,8 @@ if sayfa_secim == "Ana Sayfa":
                                 st.warning("⚠️ BENZER RESIM BULUNDU!")
                                 st.warning("Benzerlik: %" + str(round(benzerlik_skoru, 1)))
                                 st.warning("Benzer NFT: #" + str(benzer_idx))
-                            elif benzerlik_skoru > 70:
-                                st.info("ℹ️ Orta benzerlik: %" + str(round(benzerlik_skoru, 1)))
+                            elif benzerlik_skoru > 65:
+                                st.info("ℹ️ Benzerlik: %" + str(round(benzerlik_skoru, 1)))
                     except Exception as ai_err:
                         print(f"AI kontrol hatasi: {ai_err}")
                         # AI hata olursa sessiz gec
