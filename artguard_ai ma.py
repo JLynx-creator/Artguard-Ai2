@@ -343,48 +343,6 @@ def blockchain_gorsel_olustur():
         ax.text(7, 6, "Görsel oluşturulamadı", ha='center', va='center', fontsize=16)
         return fig
 
-def timeline_gorsel_olustur(nft_numarasi):
-    try:
-        fig, ax = plt.subplots(figsize=(14, 8))
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 5)
-        ax.axis('off')
-        
-        ilgili_islemler = []
-        for islem in veri['islemler']:
-            if islem.get('nft_no') == nft_numarasi:
-                ilgili_islemler.append(islem)
-        
-        if not ilgili_islemler:
-            ax.text(5, 2.5, "Bu NFT için işlem bulunamadı", ha='center', va='center', fontsize=14)
-            return fig
-        
-        x_pos = 1
-        colors = {'mint': 'green', 'transfer': 'blue', 'satis': 'red'}
-        
-        for islem in ilgili_islemler:
-            renk = colors.get(islem['tip'], 'gray')
-            
-            circle = patches.Circle((x_pos, 2.5), 0.3, color=renk, alpha=0.7)
-            ax.add_patch(circle)
-            
-            ax.text(x_pos, 3.2, islem['tip'].upper(), ha='center', fontsize=10, weight='bold')
-            ax.text(x_pos, 1.8, islem['zaman'][:10], ha='center', fontsize=8)
-            
-            if islem.get('alan'):
-                ax.text(x_pos, 1.2, f"→ {islem['alan']}", ha='center', fontsize=8)
-            
-            x_pos += 2
-        
-        ax.set_title(f"NFT #{nft_numarasi} Timeline", fontsize=16, weight='bold', pad=20)
-        return fig
-        
-    except Exception as e:
-        print(f"Timeline hatasi: {e}")
-        fig, ax = plt.subplots(figsize=(14, 8))
-        ax.text(7, 4, "Timeline oluşturulamadı", ha='center', va='center', fontsize=14)
-        return fig
-
 def sertifika_olustur(blok_data):
     try:
         genislik = 800
@@ -492,6 +450,8 @@ if sayfa_secim == "Ana Sayfa":
                 st.success("✅ Yeni Dosya")
                 st.code(dosya_hash[:20] + "...")
                 
+                benzerlik_engel = False
+                
                 if yuklenen_dosya.type.startswith('image'):
                     try:
                         yuklenen_dosya.seek(0)
@@ -502,98 +462,101 @@ if sayfa_secim == "Ana Sayfa":
                             benzer_idx, benzerlik_skoru = similarity_check(resim_hash)
                             
                             if benzerlik_skoru > 85:
-                                st.error("🚨 YÜKSEME ENGELLENDİ!")
+                                st.error("🚨 YÜKLEME ENGELLENDİ!")
                                 st.error(f"AI Detection: %65 - Benzerlik: %{round(benzerlik_skoru, 1)}")
                                 st.warning("Bu resim çok benzer bir NFT ile çakışıyor!")
                                 st.info(f"Benzer NFT: #{benzer_idx}")
-                                st.stop()
+                                benzerlik_engel = True
                             elif benzerlik_skoru > 65:
                                 st.info("ℹ️ Benzerlik: %" + str(round(benzerlik_skoru, 1)))
                     except Exception as ai_err:
                         print(f"AI kontrol hatasi: {ai_err}")
             
-            st.markdown("---")
-            
-            bilgi_kolon1, bilgi_kolon2 = st.columns(2)
-            
-            with bilgi_kolon1:
-                nft_isim = st.text_input("NFT Ismi")
-            with bilgi_kolon2:
-                nft_fiyat = st.number_input("Fiyat (TL)", min_value=0, value=100)
-            
-            nft_aciklama = st.text_area("Aciklama", height=80)
-            
-            if st.button("🔗 NFT Olustur", use_container_width=True):
-                if not nft_isim or nft_isim == "":
-                    st.error("NFT ismi bos olamaz!")
-                else:
-                    onceki_blok_hash = ""
-                    if len(veri['bloklar']) > 0:
-                        son_blok = veri['bloklar'][-1]
-                        onceki_blok_hash = son_blok['blok_hash']
-                    
-                    yeni_blok = {
-                        'numara': len(veri['bloklar']),
-                        'zaman': str(dt.datetime.now()),
-                        'isim': nft_isim,
-                        'sahip': st.session_state.kullanici_adi,
-                        'dosya_hash': dosya_hash,
-                        'onceki_hash': onceki_blok_hash,
-                        'fiyat': nft_fiyat,
-                        'aciklama': nft_aciklama,
-                        'satista': False,
-                    }
-                    
-                    if yuklenen_dosya.type.startswith('image'):
-                        try:
-                            yuklenen_dosya.seek(0)
-                            resim = Image.open(yuklenen_dosya)
-                            resim_hash_obj = img_hash_calc(resim)
-                            yeni_blok['resim_hash'] = str(resim_hash_obj) if resim_hash_obj is not None else None
-                        except Exception as img_err:
-                            print(f"Resim hash hatasi: {img_err}")
+            if not benzerlik_engel:
+                st.markdown("---")
+                
+                bilgi_kolon1, bilgi_kolon2 = st.columns(2)
+                
+                with bilgi_kolon1:
+                    nft_isim = st.text_input("NFT Ismi", key="nft_isim_input")
+                with bilgi_kolon2:
+                    nft_fiyat = st.number_input("Fiyat (TL)", min_value=0, value=100, key="nft_fiyat_input")
+                
+                nft_aciklama = st.text_area("Aciklama", height=80, key="nft_aciklama_input")
+                
+                if st.button("🔗 NFT Olustur", use_container_width=True, key="nft_olustur_btn"):
+                    if not nft_isim or nft_isim == "":
+                        st.error("NFT ismi bos olamaz!")
+                    else:
+                        onceki_blok_hash = ""
+                        if len(veri['bloklar']) > 0:
+                            son_blok = veri['bloklar'][-1]
+                            onceki_blok_hash = son_blok['blok_hash']
+                        
+                        yeni_blok = {
+                            'numara': len(veri['bloklar']),
+                            'zaman': str(dt.datetime.now()),
+                            'isim': nft_isim,
+                            'sahip': st.session_state.kullanici_adi,
+                            'dosya_hash': dosya_hash,
+                            'onceki_hash': onceki_blok_hash,
+                            'fiyat': nft_fiyat,
+                            'aciklama': nft_aciklama,
+                            'satista': False,
+                        }
+                        
+                        if yuklenen_dosya.type.startswith('image'):
+                            try:
+                                yuklenen_dosya.seek(0)
+                                resim = Image.open(yuklenen_dosya)
+                                resim_hash_obj = img_hash_calc(resim)
+                                yeni_blok['resim_hash'] = str(resim_hash_obj) if resim_hash_obj is not None else None
+                            except Exception as img_err:
+                                print(f"Resim hash hatasi: {img_err}")
+                                yeni_blok['resim_hash'] = None
+                        else:
                             yeni_blok['resim_hash'] = None
-                    else:
-                        yeni_blok['resim_hash'] = None
-                    
-                    yuklenen_dosya.seek(0)
-                    yeni_blok['resim_veri'] = b64.b64encode(yuklenen_dosya.read()).decode()
-                    
-                    yeni_blok['blok_hash'] = block_hash_calc(yeni_blok)
-                    
-                    veri['bloklar'].append(yeni_blok)
-                    
-                    aktif_kullanici['nftler'].append(yeni_blok['numara'])
-                    
-                    yeni_islem = {
-                        'tip': 'mint',
-                        'nft_no': yeni_blok['numara'],
-                        'gonderen': None,
-                        'alan': st.session_state.kullanici_adi,
-                        'fiyat': 0,
-                        'zaman': str(dt.datetime.now())
-                    }
-                    veri['islemler'].append(yeni_islem)
-                    
-                    if not save_data(veri):
-                        st.error("Kayit hatasi!")
-                    else:
-                        st.success("✅ NFT olusturuldu! Token #" + str(yeni_blok['numara']))
-                        st.balloons()
                         
-                        sertifika = sertifika_olustur(yeni_blok)
-                        sertifika_buffer = BytesIO()
-                        sertifika.save(sertifika_buffer, format='PNG')
-                        sertifika_buffer.seek(0)
+                        yuklenen_dosya.seek(0)
+                        yeni_blok['resim_veri'] = b64.b64encode(yuklenen_dosya.read()).decode()
                         
-                        st.download_button(
-                            "📥 Sertifika Indir",
-                            sertifika_buffer,
-                            "sertifika_" + str(yeni_blok['numara']) + ".png",
-                            "image/png"
-                        )
-                    
-                    st.rerun()
+                        yeni_blok['blok_hash'] = block_hash_calc(yeni_blok)
+                        
+                        veri['bloklar'].append(yeni_blok)
+                        
+                        aktif_kullanici['nftler'].append(yeni_blok['numara'])
+                        
+                        yeni_islem = {
+                            'tip': 'mint',
+                            'nft_no': yeni_blok['numara'],
+                            'gonderen': None,
+                            'alan': st.session_state.kullanici_adi,
+                            'fiyat': 0,
+                            'zaman': str(dt.datetime.now())
+                        }
+                        veri['islemler'].append(yeni_islem)
+                        
+                        if save_data(veri):
+                            st.success("✅ NFT olusturuldu! Token #" + str(yeni_blok['numara']))
+                            st.balloons()
+                            
+                            sertifika = sertifika_olustur(yeni_blok)
+                            sertifika_buffer = BytesIO()
+                            sertifika.save(sertifika_buffer, format='PNG')
+                            sertifika_buffer.seek(0)
+                            
+                            st.download_button(
+                                "📥 Sertifika Indir",
+                                sertifika_buffer,
+                                "sertifika_" + str(yeni_blok['numara']) + ".png",
+                                "image/png",
+                                key="sertifika_indir_btn"
+                            )
+                            
+                            tm.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error("Kayit hatasi!")
 
 elif sayfa_secim == "NFT Koleksiyonum":
     st.title("🎨 NFT Koleksiyonum")
@@ -609,16 +572,16 @@ elif sayfa_secim == "NFT Koleksiyonum":
             satirda_kolonlar = st.columns(satirda_kac)
             
             for kolon_no in range(satirda_kac):
-                nft_index = satir_no * satirda_kac + kolon_no
-                
-                if nft_index < len(aktif_kullanici['nftler']):
-                    nft_numarasi = aktif_kullanici['nftler'][nft_index]
+                if satir_no + kolon_no < toplam_nft_sayisi:
+                    nft_numarasi = aktif_kullanici['nftler'][satir_no + kolon_no]
                     nft_bilgi = veri['bloklar'][nft_numarasi]
                     
                     with satirda_kolonlar[kolon_no]:
+                        st.markdown("<div style='background:white;padding:10px;border-radius:10px;'>", unsafe_allow_html=True)
+                        
                         if 'resim_veri' in nft_bilgi:
                             resim_bytes = b64.b64decode(nft_bilgi['resim_veri'])
-                            st.image(resim_bytes, width=300, use_container_width=True)
+                            st.image(resim_bytes)
                         
                         st.markdown("**" + nft_bilgi['isim'] + "**")
                         st.caption("Token #" + str(nft_bilgi['numara']))
@@ -627,19 +590,30 @@ elif sayfa_secim == "NFT Koleksiyonum":
                         buton_kolon1, buton_kolon2 = st.columns(2)
                         
                         with buton_kolon1:
-                            if st.button("🔄 Transfer", key="transfer_" + str(nft_numarasi)):
+                            if nft_bilgi['satista'] == False:
+                                if st.button("Sat", key="sat_buton_" + str(nft_numarasi)):
+                                    nft_bilgi['satista'] = True
+                                    veri['pazar'].append(nft_numarasi)
+                                    if save_data(veri):
+                                        st.success("Pazara eklendi!")
+                                        tm.sleep(1)
+                                        st.rerun()
+                            else:
+                                if st.button("Iptal", key="iptal_buton_" + str(nft_numarasi)):
+                                    nft_bilgi['satista'] = False
+                                    if nft_numarasi in veri['pazar']:
+                                        veri['pazar'].remove(nft_numarasi)
+                                    if save_data(veri):
+                                        st.success("Satış iptal edildi!")
+                                        tm.sleep(1)
+                                        st.rerun()
+                        
+                        with buton_kolon2:
+                            if st.button("Transfer", key="transfer_buton_" + str(nft_numarasi)):
                                 st.session_state['transfer_nft'] = nft_numarasi
                                 st.rerun()
                         
-                        with buton_kolon2:
-                            if nft_bilgi['satista'] == False:
-                                if st.button("💰 Sat", key="sat_" + str(nft_numarasi)):
-                                    st.session_state['sat_nft'] = nft_numarasi
-                                    st.rerun()
-                            else:
-                                if st.button("❌ İptal", key="iptal_" + str(nft_numarasi)):
-                                    st.session_state['iptal_nft'] = nft_numarasi
-                                    st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
         
         if 'transfer_nft' in st.session_state:
             st.markdown("---")
@@ -648,35 +622,43 @@ elif sayfa_secim == "NFT Koleksiyonum":
             transfer_edilecek_nft = veri['bloklar'][st.session_state['transfer_nft']]
             st.write("**Eser:** " + transfer_edilecek_nft['isim'])
             
-            alici_kullanici = st.text_input("Alici Kullanici Adi")
+            alici_kullanici = st.text_input("Alici Kullanici Adi", key="transfer_alici_input")
             
-            if st.button("Transfer Et"):
-                if not alici_kullanici or alici_kullanici == "":
-                    st.error("Alici kullanici adi bos olamaz!")
-                elif alici_kullanici not in veri['kullanicilar']:
-                    st.error("Kullanici bulunamadi!")
-                elif alici_kullanici == st.session_state.kullanici_adi:
-                    st.error("Kendinize transfer yapamazsiniz!")
-                else:
-                    aktif_kullanici['nftler'].remove(st.session_state['transfer_nft'])
-                    
-                    veri['kullanicilar'][alici_kullanici]['nftler'].append(st.session_state['transfer_nft'])
-                    
-                    transfer_edilecek_nft['sahip'] = alici_kullanici
-                    
-                    transfer_islem = {
-                        'tip': 'transfer',
-                        'nft_no': st.session_state['transfer_nft'],
-                        'gonderen': st.session_state.kullanici_adi,
-                        'alan': alici_kullanici,
-                        'fiyat': 0,
-                        'zaman': str(dt.datetime.now())
-                    }
-                    veri['islemler'].append(transfer_islem)
-                    
-                    save_data(veri)
-                    
-                    st.success("Transfer tamamlandi!")
+            col_transfer1, col_transfer2 = st.columns(2)
+            
+            with col_transfer1:
+                if st.button("Transfer Et", key="transfer_et_btn"):
+                    if not alici_kullanici or alici_kullanici == "":
+                        st.error("Alici kullanici adi bos olamaz!")
+                    elif alici_kullanici not in veri['kullanicilar']:
+                        st.error("Kullanici bulunamadi!")
+                    elif alici_kullanici == st.session_state.kullanici_adi:
+                        st.error("Kendinize transfer yapamazsiniz!")
+                    else:
+                        aktif_kullanici['nftler'].remove(st.session_state['transfer_nft'])
+                        
+                        veri['kullanicilar'][alici_kullanici]['nftler'].append(st.session_state['transfer_nft'])
+                        
+                        transfer_edilecek_nft['sahip'] = alici_kullanici
+                        
+                        transfer_islem = {
+                            'tip': 'transfer',
+                            'nft_no': st.session_state['transfer_nft'],
+                            'gonderen': st.session_state.kullanici_adi,
+                            'alan': alici_kullanici,
+                            'fiyat': 0,
+                            'zaman': str(dt.datetime.now())
+                        }
+                        veri['islemler'].append(transfer_islem)
+                        
+                        if save_data(veri):
+                            st.success("Transfer tamamlandi!")
+                            del st.session_state['transfer_nft']
+                            tm.sleep(1)
+                            st.rerun()
+            
+            with col_transfer2:
+                if st.button("Iptal", key="transfer_iptal_btn"):
                     del st.session_state['transfer_nft']
                     st.rerun()
 
@@ -735,20 +717,21 @@ elif sayfa_secim == "NFT Pazari":
                                     }
                                     veri['islemler'].append(satis_islem)
                                     
-                                    save_data(veri)
-                                    
-                                    st.success("Satin alma basarili!")
-                                    st.balloons()
-                                    st.rerun()
+                                    if save_data(veri):
+                                        st.success("Satin alma basarili!")
+                                        st.balloons()
+                                        tm.sleep(1)
+                                        st.rerun()
                                 else:
                                     st.error("Bakiye yetersiz!")
                         else:
-                            if st.button("Satisi Iptal Et", key="iptal_" + str(pazar_nft_no)):
+                            if st.button("Satisi Iptal Et", key="iptal_pazar_" + str(pazar_nft_no)):
                                 pazar_nft['satista'] = False
                                 veri['pazar'].remove(pazar_nft_no)
-                                save_data(veri)
-                                st.success("Iptal edildi!")
-                                st.rerun()
+                                if save_data(veri):
+                                    st.success("Iptal edildi!")
+                                    tm.sleep(1)
+                                    st.rerun()
                         
                         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -813,35 +796,6 @@ elif sayfa_secim == "📊 Blockchain Analizi":
     except Exception as e:
         st.error("Görsel oluşturulamadı!")
         st.write(f"Hata: {e}")
-    
-    st.markdown("---")
-    
-    st.subheader("🕐 NFT Timeline Analizi")
-    
-    if len(veri['bloklar']) > 0:
-        secili_nft = st.selectbox("NFT Seç", [f"NFT #{blok['numara']} - {blok['isim']}" for blok in veri['bloklar']])
-        nft_numarasi = int(secili_nft.split('#')[1].split(' ')[0])
-        
-        try:
-            timeline_fig = timeline_gorsel_olustur(nft_numarasi)
-            timeline_canvas = FigureCanvasAgg(timeline_fig)
-            timeline_canvas.draw()
-            timeline_buf = BytesIO()
-            timeline_fig.savefig(timeline_buf, format='png', dpi=150, bbox_inches='tight')
-            timeline_buf.seek(0)
-            timeline_img = Image.open(timeline_buf)
-            st.image(timeline_img, use_container_width=True)
-            
-            timeline_buf.seek(0)
-            st.download_button("📥 Timeline İndir", timeline_buf, f"timeline_{nft_numarasi}.png", "image/png")
-            
-            plt.close(timeline_fig)
-            
-        except Exception as e:
-            st.error("Timeline oluşturulamadı!")
-            st.write(f"Hata: {e}")
-    else:
-        st.info("Henüz NFT oluşturulmamış!")
     
     st.markdown("---")
     
@@ -916,11 +870,12 @@ elif sayfa_secim == "Profil":
                 st.error("Sifirdan buyuk olmali!")
             else:
                 aktif_kullanici['para'] += ekleme_miktari
-                if not save_data(veri):
-                    st.error("Veri kaydedilemedi!")
-                else:
+                if save_data(veri):
                     st.success(f"{ekleme_miktari} TL eklendi!")
-                st.rerun()
+                    tm.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("Veri kaydedilemedi!")
         
         st.markdown("---")
         st.markdown("### Islem Gecmisi")
