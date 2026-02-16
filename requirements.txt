@@ -2,3 +2,5 @@ streamlit
 imagehash
 pillow
 qrcode[pil]
+plotly
+matplotlib
