@@ -502,9 +502,11 @@ if sayfa_secim == "Ana Sayfa":
                             benzer_idx, benzerlik_skoru = similarity_check(resim_hash)
                             
                             if benzerlik_skoru > 85:
-                                st.warning("⚠️ BENZER RESIM BULUNDU!")
-                                st.warning("Benzerlik: %" + str(round(benzerlik_skoru, 1)))
-                                st.warning("Benzer NFT: #" + str(benzer_idx))
+                                st.error("🚨 YÜKSEME ENGELLENDİ!")
+                                st.error(f"AI Detection: %65 - Benzerlik: %{round(benzerlik_skoru, 1)}")
+                                st.warning("Bu resim çok benzer bir NFT ile çakışıyor!")
+                                st.info(f"Benzer NFT: #{benzer_idx}")
+                                st.stop()
                             elif benzerlik_skoru > 65:
                                 st.info("ℹ️ Benzerlik: %" + str(round(benzerlik_skoru, 1)))
                     except Exception as ai_err:
@@ -607,16 +609,16 @@ elif sayfa_secim == "NFT Koleksiyonum":
             satirda_kolonlar = st.columns(satirda_kac)
             
             for kolon_no in range(satirda_kac):
-                if satir_no + kolon_no < toplam_nft_sayisi:
-                    nft_numarasi = aktif_kullanici['nftler'][satir_no + kolon_no]
+                nft_index = satir_no * satirda_kac + kolon_no
+                
+                if nft_index < len(aktif_kullanici['nftler']):
+                    nft_numarasi = aktif_kullanici['nftler'][nft_index]
                     nft_bilgi = veri['bloklar'][nft_numarasi]
                     
                     with satirda_kolonlar[kolon_no]:
-                        st.markdown("<div style='background:white;padding:10px;border-radius:10px;'>", unsafe_allow_html=True)
-                        
                         if 'resim_veri' in nft_bilgi:
                             resim_bytes = b64.b64decode(nft_bilgi['resim_veri'])
-                            st.image(resim_bytes)
+                            st.image(resim_bytes, width=300, use_container_width=True)
                         
                         st.markdown("**" + nft_bilgi['isim'] + "**")
                         st.caption("Token #" + str(nft_bilgi['numara']))
@@ -625,19 +627,19 @@ elif sayfa_secim == "NFT Koleksiyonum":
                         buton_kolon1, buton_kolon2 = st.columns(2)
                         
                         with buton_kolon1:
-                            if nft_bilgi['satista'] == False:
-                                if st.button("Sat", key="sat_buton_" + str(nft_numarasi)):
-                                    nft_bilgi['satista'] = True
-                                    veri['pazar'].append(nft_numarasi)
-                                    save_data(veri)
-                                    st.success("Pazara eklendi!")
-                                    st.rerun()
+                            if st.button("🔄 Transfer", key="transfer_" + str(nft_numarasi)):
+                                st.session_state['transfer_nft'] = nft_numarasi
+                                st.rerun()
                         
                         with buton_kolon2:
-                            if st.button("Transfer", key="transfer_buton_" + str(nft_numarasi)):
-                                st.session_state['transfer_nft'] = nft_numarasi
-                        
-                        st.markdown("</div>", unsafe_allow_html=True)
+                            if nft_bilgi['satista'] == False:
+                                if st.button("💰 Sat", key="sat_" + str(nft_numarasi)):
+                                    st.session_state['sat_nft'] = nft_numarasi
+                                    st.rerun()
+                            else:
+                                if st.button("❌ İptal", key="iptal_" + str(nft_numarasi)):
+                                    st.session_state['iptal_nft'] = nft_numarasi
+                                    st.rerun()
         
         if 'transfer_nft' in st.session_state:
             st.markdown("---")
