@@ -512,7 +512,7 @@ if sayfa_secim == "Ana Sayfa":
                     # yeni blok olustur
                     yeni_blok = {
                         'numara': len(veri['bloklar']),
-                        'zaman': str(datetime.datetime.now()),
+                        'zaman': str(dt.datetime.now()),
                         'isim': nft_isim,
                         'sahip': st.session_state.kullanici_adi,
                         'dosya_hash': dosya_hash,
@@ -536,7 +536,7 @@ if sayfa_secim == "Ana Sayfa":
                     
                     # resim verisini yeniden kodla
                     yuklenen_dosya.seek(0)
-                    yeni_blok['resim_veri'] = base64.b64encode(yuklenen_dosya.read()).decode()
+                    yeni_blok['resim_veri'] = b64.b64encode(yuklenen_dosya.read()).decode()
                     
                     # blok hash hesapla - kacinci blok oldugu onemli
                     yeni_blok['blok_hash'] = block_hash_calc(yeni_blok)
@@ -554,7 +554,7 @@ if sayfa_secim == "Ana Sayfa":
                         'gonderen': None,
                         'alan': st.session_state.kullanici_adi,
                         'fiyat': 0,
-                        'zaman': str(datetime.datetime.now())
+                        'zaman': str(dt.datetime.now())
                     }
                     veri['islemler'].append(yeni_islem)
                     
@@ -666,7 +666,7 @@ elif sayfa_secim == "NFT Koleksiyonum":
                         'gonderen': st.session_state.kullanici_adi,
                         'alan': alici_kullanici,
                         'fiyat': 0,
-                        'zaman': str(datetime.datetime.now())
+                        'zaman': str(dt.datetime.now())
                     }
                     veri['islemler'].append(transfer_islem)
                     
@@ -734,7 +734,7 @@ elif sayfa_secim == "NFT Pazari":
                                         'gonderen': pazar_nft['sahip'],
                                         'alan': st.session_state.kullanici_adi,
                                         'fiyat': pazar_nft['fiyat'],
-                                        'zaman': str(datetime.datetime.now())
+                                        'zaman': str(dt.datetime.now())
                                     }
                                     veri['islemler'].append(satis_islem)
                                     
