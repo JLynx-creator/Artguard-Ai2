@@ -262,30 +262,347 @@ veri = st.session_state.veri
 L = D[st.session_state.dil]
 c1, c2 = TEMALAR[st.session_state.secili_tema]
 
-st.markdown(f"""<style>
-.stApp{{background:linear-gradient(135deg,{c1},{c2});min-height:100vh}}
-.main .block-container{{background:rgba(255,255,255,.97);border-radius:20px;padding:2rem;box-shadow:0 16px 48px rgba(0,0,0,.22);max-width:1200px;margin:1rem auto}}
-.stButton>button{{background:linear-gradient(90deg,{c1},{c2});color:#fff!important;border:none!important;border-radius:10px;padding:.5rem 1.4rem;font-weight:600;transition:.15s}}
-.stButton>button:hover{{opacity:.85;transform:translateY(-1px)}}
-[data-testid="stSidebar"]{{background:linear-gradient(180deg,{c1}33,{c2}11)}}
-[data-testid="stMetric"]{{background:#f8f9fa;border-radius:12px;padding:.8rem 1rem;border:1px solid #e8ecef}}
-hr{{border-color:#e8ecef!important}}
-</style>""", unsafe_allow_html=True)
+# ── Global CSS ────────────────────────────────────────────────────────────────
+st.markdown(f"""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {{
+  --c1: {c1}; --c2: {c2};
+  --bg:  #080810; --bg2: #0e0e1a; --bg3: #141424;
+  --bdr: #1e1e32; --bdr2: #262640;
+  --tx:  #e8e8f8; --tx2: #9090b8; --tx3: #50507888;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+}}
+*, *::before, *::after {{ box-sizing: border-box; margin: 0; }}
+html, body, .stApp {{ font-family: var(--font-body) !important; background: var(--bg) !important; }}
 
-# giriş
+/* ── Sidebar tamamen gizle ── */
+[data-testid="stSidebar"] {{ display: none !important; }}
+.stMainBlockContainer, .block-container {{
+  padding: 0 !important; max-width: 100% !important;
+  background: transparent !important; box-shadow: none !important;
+}}
+
+/* ── Navbar ── */
+.nb {{
+  position: sticky; top: 0; z-index: 9999;
+  background: rgba(8,8,16,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bdr);
+  display: flex; align-items: center;
+  padding: 0 2rem; height: 62px; gap: 0;
+  animation: fadeDown .4s ease;
+}}
+@keyframes fadeDown {{ from{{opacity:0;transform:translateY(-12px)}} to{{opacity:1;transform:none}} }}
+.nb-logo {{
+  font-family: var(--font-head); font-size: 19px; font-weight: 800;
+  color: var(--tx); letter-spacing: -.3px; margin-right: 2.5rem;
+  display: flex; align-items: center; gap: 7px; white-space: nowrap;
+}}
+.nb-logo .dot {{ width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg,var(--c1),var(--c2));
+  box-shadow: 0 0 10px var(--c1); }}
+.nb-links {{ display: flex; gap: 2px; flex: 1; }}
+.nb-link {{
+  font-size: 13px; font-weight: 500; color: var(--tx2);
+  padding: 6px 13px; border-radius: 8px; cursor: pointer;
+  border: none; background: transparent;
+  transition: all .18s; white-space: nowrap; font-family: var(--font-body);
+}}
+.nb-link:hover {{ color: var(--tx); background: var(--bg3); }}
+.nb-link.on {{
+  color: #fff; background: linear-gradient(135deg,{c1}28,{c2}18);
+  border: 1px solid {c1}44;
+}}
+.nb-right {{ display: flex; align-items: center; gap: 10px; margin-left: auto; }}
+.nb-pill {{
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--bdr2);
+  border-radius: 10px; padding: 5px 12px;
+  font-size: 13px; font-weight: 500; color: var(--tx2);
+}}
+.nb-pill .bal {{ color: {c1}; font-weight: 700; font-size: 12px; }}
+.nb-exit {{
+  background: transparent; border: 1px solid var(--bdr2);
+  border-radius: 9px; padding: 5px 12px;
+  font-size: 12px; color: var(--tx3); cursor: pointer;
+  font-family: var(--font-body); transition: all .18s;
+}}
+.nb-exit:hover {{ border-color: #ff4466; color: #ff4466; }}
+
+/* ── İçerik sarmalayıcı ── */
+.wrap {{
+  max-width: 1180px; margin: 0 auto; padding: 2rem 2rem;
+  animation: fadeUp .35s ease;
+}}
+@keyframes fadeUp {{ from{{opacity:0;transform:translateY(10px)}} to{{opacity:1;transform:none}} }}
+
+/* ── Sayfa başlığı ── */
+.ph {{ margin-bottom: 1.8rem; }}
+.ph h1 {{
+  font-family: var(--font-head); font-size: 2rem; font-weight: 800;
+  color: var(--tx); letter-spacing: -.5px; line-height: 1.1;
+}}
+.ph p {{ font-size: 13px; color: var(--tx3); margin-top: 5px; }}
+
+/* ── Stat kartlar ── */
+.stats {{ display: flex; gap: 14px; margin-bottom: 2rem; flex-wrap: wrap; }}
+.sc {{
+  flex: 1; min-width: 150px;
+  background: var(--bg2); border: 1px solid var(--bdr);
+  border-radius: 16px; padding: 1.2rem 1.4rem;
+  transition: border-color .2s, transform .2s;
+}}
+.sc:hover {{ border-color: {c1}55; transform: translateY(-2px); }}
+.sc-label {{ font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--tx3); font-weight: 600; margin-bottom: 8px; }}
+.sc-val {{ font-family: var(--font-head); font-size: 2.2rem; font-weight: 800; color: var(--tx); }}
+.sc-val small {{ font-size: 1rem; color: var(--tx2); font-family: var(--font-body); font-weight: 400; }}
+
+/* ── Card ── */
+.card {{
+  background: var(--bg2); border: 1px solid var(--bdr);
+  border-radius: 18px; overflow: hidden;
+  transition: border-color .2s, transform .2s;
+  margin-bottom: 18px;
+}}
+.card:hover {{ border-color: {c1}44; transform: translateY(-2px); box-shadow: 0 16px 40px #00000050; }}
+.card-body {{ padding: 13px 15px 12px; }}
+.card-name {{ font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--tx); margin-bottom: 7px; }}
+.badge {{
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 2px 9px; border-radius: 6px; margin-right: 4px; margin-bottom: 3px;
+}}
+.b-blue  {{ background: #0d1f3f; color: #5090ff; }}
+.b-gold  {{ background: #2a1800; color: #ffaa30; }}
+.b-green {{ background: #0a2818; color: #30d870; border: 1px solid #30d87033; }}
+.b-gray  {{ background: var(--bg3); color: var(--tx2); border: 1px solid var(--bdr2); }}
+.b-red   {{ background: #2a0808; color: #ff4466; border: 1px solid #ff446633; }}
+
+/* ── Bölüm ayraç ── */
+.div {{ height: 1px; background: var(--bdr); margin: 1.5rem 0; }}
+
+/* ── AI analiz kutu ── */
+.ai-box {{
+  border-radius: 14px; padding: 15px 18px; margin-bottom: 10px;
+  border: 1.5px solid var(--bdr);
+}}
+.ai-info {{ background: #0a122a; border-color: #1a2a5a; }}
+.ai-ok   {{ background: #071a10; border-color: #1a4a28; }}
+.ai-warn {{ background: #1a1200; border-color: #4a3a00; }}
+.ai-stop {{ background: #1a0808; border-color: #4a1818; }}
+.ai-score {{ font-family: var(--font-head); font-size: 2.4rem; font-weight: 800; }}
+.ai-label {{ font-size: 11px; color: var(--tx3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }}
+.ai-status {{ font-size: 13px; font-weight: 700; margin-top: 4px; }}
+.pbar-bg {{ background: #ffffff12; border-radius: 4px; height: 6px; margin: 8px 0; overflow: hidden; }}
+.pbar {{ height: 100%; border-radius: 4px; }}
+
+/* ── Görsel bilgi kutu ── */
+.img-info {{
+  background: var(--bg3); border: 1px solid var(--bdr2);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
+}}
+.img-info .lbl {{ font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--tx3); font-weight: 600; margin-bottom: 8px; }}
+.tag {{ display: inline-block; background: var(--bg2); border: 1px solid var(--bdr2); border-radius: 6px; padding: 3px 10px; font-size: 12px; color: var(--tx2); margin-right: 5px; }}
+.hash-txt {{ font-family: monospace; font-size: 11px; color: var(--tx3); margin-top: 8px; word-break: break-all; }}
+
+/* ── Başarı kutu ── */
+.success-box {{
+  background: linear-gradient(135deg,#071a10,#0a2018);
+  border: 1.5px solid #1a5a30;
+  border-radius: 16px; padding: 22px 24px; text-align: center;
+  animation: fadeUp .3s ease;
+}}
+.success-box h3 {{ font-family: var(--font-head); font-size: 1.3rem; color: #30d870; margin: 10px 0 5px; }}
+.success-box p  {{ font-size: 13px; color: #50a870; }}
+.success-box .pow {{
+  display: inline-block; margin-top: 10px;
+  background: #ffffff0f; border-radius: 8px;
+  padding: 4px 14px; font-family: monospace; font-size: 11px; color: #30d870aa;
+}}
+
+/* ── Hata kutu ── */
+.err-box {{
+  background: #1a0808; border: 1.5px solid #4a1818;
+  border-radius: 14px; padding: 16px 20px;
+}}
+
+/* ── Zincir kayıt satır ── */
+.blk-row {{
+  background: var(--bg2); border: 1px solid var(--bdr);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+  font-size: 13px; color: var(--tx2);
+}}
+.blk-row strong {{ color: var(--tx); }}
+
+/* ── Transfer/modal alanı ── */
+.modal-box {{
+  background: var(--bg3); border: 1px solid var(--bdr2);
+  border-radius: 16px; padding: 18px 20px; margin-top: 16px;
+}}
+
+/* ── Streamlit butonları ── */
+.stButton > button {{
+  background: linear-gradient(135deg,{c1},{c2}) !important;
+  color: #fff !important; border: none !important;
+  border-radius: 11px !important; padding: .55rem 1.5rem !important;
+  font-family: var(--font-body) !important; font-weight: 600 !important;
+  font-size: 13.5px !important; letter-spacing: .1px !important;
+  transition: all .2s !important;
+  box-shadow: 0 4px 16px {c1}33 !important;
+}}
+.stButton > button:hover {{
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px {c1}55 !important;
+  opacity: .9 !important;
+}}
+
+/* ── Input ── */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stNumberInput > div > div > input {{
+  background: var(--bg3) !important; border: 1px solid var(--bdr2) !important;
+  border-radius: 11px !important; color: var(--tx) !important;
+  font-family: var(--font-body) !important; font-size: 14px !important;
+}}
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {{
+  border-color: {c1} !important; box-shadow: 0 0 0 3px {c1}20 !important;
+}}
+label, .stTextInput label, .stTextArea label, .stNumberInput label, .stSelectbox label {{
+  color: var(--tx3) !important; font-size: 12px !important; font-weight: 500 !important;
+  text-transform: uppercase; letter-spacing: .4px !important;
+}}
+
+/* ── Selectbox ── */
+.stSelectbox > div > div {{
+  background: var(--bg3) !important; border: 1px solid var(--bdr2) !important;
+  border-radius: 11px !important; color: var(--tx) !important;
+}}
+
+/* ── Metric ── */
+[data-testid="stMetric"] {{
+  background: var(--bg2) !important; border: 1px solid var(--bdr) !important;
+  border-radius: 16px !important; padding: 1.1rem 1.3rem !important;
+}}
+[data-testid="stMetricLabel"] {{ color: var(--tx3) !important; font-size: 11px !important; text-transform: uppercase; letter-spacing: .6px; }}
+[data-testid="stMetricValue"] {{ color: var(--tx) !important; font-family: var(--font-head) !important; font-size: 2rem !important; font-weight: 800 !important; }}
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {{
+  background: var(--bg3) !important; border-radius: 12px !important;
+  padding: 4px !important; gap: 2px !important; border: 1px solid var(--bdr) !important;
+}}
+.stTabs [data-baseweb="tab"] {{
+  background: transparent !important; border-radius: 9px !important;
+  color: var(--tx2) !important; font-size: 13px !important;
+  font-weight: 500 !important; font-family: var(--font-body) !important;
+}}
+.stTabs [aria-selected="true"] {{
+  background: linear-gradient(135deg,{c1},{c2}) !important;
+  color: #fff !important;
+}}
+
+/* ── File uploader ── */
+[data-testid="stFileUploader"] {{
+  background: var(--bg2) !important;
+  border: 2px dashed var(--bdr2) !important;
+  border-radius: 14px !important;
+}}
+
+/* ── Expander ── */
+.streamlit-expanderHeader {{
+  background: var(--bg2) !important; border: 1px solid var(--bdr) !important;
+  border-radius: 12px !important; color: var(--tx2) !important; font-weight: 600 !important;
+}}
+
+/* ── Dataframe ── */
+[data-testid="stDataFrame"] {{
+  background: var(--bg2) !important; border-radius: 12px !important;
+  border: 1px solid var(--bdr) !important; overflow: hidden !important;
+}}
+
+/* ── Metin ── */
+.stMarkdown p, .stMarkdown li {{ color: var(--tx2) !important; font-size: 14px !important; }}
+h1,h2,h3,h4 {{ font-family: var(--font-head) !important; color: var(--tx) !important; }}
+.stCaption p {{ color: var(--tx3) !important; }}
+hr {{ border-color: var(--bdr) !important; margin: 1.2rem 0 !important; }}
+
+/* ── Alert ── */
+.stAlert {{ border-radius: 12px !important; border: none !important; }}
+
+/* ── Progress ── */
+.stProgress > div > div > div > div {{
+  background: linear-gradient(90deg,{c1},{c2}) !important; border-radius: 6px !important;
+}}
+
+/* ── Giriş sayfası ── */
+.login-bg {{
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse 60% 50% at 20% 30%, {c1}18 0%, transparent 60%),
+              radial-gradient(ellipse 50% 40% at 80% 70%, {c2}12 0%, transparent 55%),
+              var(--bg);
+  padding: 2rem;
+}}
+.login-box {{
+  background: var(--bg2); border: 1px solid var(--bdr2);
+  border-radius: 24px; padding: 2.4rem; width: 100%; max-width: 420px;
+  box-shadow: 0 32px 80px #00000070;
+  animation: fadeUp .4s ease;
+}}
+.login-logo {{
+  text-align: center; margin-bottom: 1.8rem;
+}}
+.login-logo h1 {{
+  font-family: var(--font-head); font-size: 1.8rem; font-weight: 800;
+  color: var(--tx); letter-spacing: -.5px;
+}}
+.login-logo p {{ font-size: 13px; color: var(--tx3); margin-top: 4px; }}
+.login-orb {{
+  width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 12px;
+  background: linear-gradient(135deg,{c1},{c2});
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; box-shadow: 0 8px 24px {c1}44;
+}}
+
+/* ── Benzerlik bar ── */
+.sim-row {{ display: flex; align-items: center; gap: 10px; margin: 5px 0; }}
+.sim-name {{ min-width: 130px; font-size: 12px; color: var(--tx2); }}
+.sim-bar-bg {{ flex: 1; background: #ffffff10; border-radius: 4px; height: 10px; overflow: hidden; }}
+.sim-bar {{ height: 100%; border-radius: 4px; transition: width .5s ease; }}
+.sim-pct {{ min-width: 44px; font-size: 12px; font-weight: 700; text-align: right; }}
+
+/* ── Blockchain blok ── */
+.blk-info {{
+  background: var(--bg3); border: 1px solid var(--bdr2);
+  border-left: 4px solid {c1}; border-radius: 12px; padding: 14px 18px;
+  font-size: 13px; color: var(--tx2); margin-bottom: 12px;
+}}
+.blk-info h3 {{ font-family: var(--font-head); font-size: 1rem; color: var(--tx); margin-bottom: 6px; }}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Giriş ─────────────────────────────────────────────────────────────────────
 if not st.session_state.giris:
-    st.markdown(f"<h1 style='text-align:center'>{L['baslik']}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align:center;color:#888'>{L['altyazi']}</p>", unsafe_allow_html=True)
-    ds = st.selectbox(L['dil'], ["🇹🇷 Türkçe","🇬🇧 English"], index=0 if st.session_state.dil=='tr' else 1, key="dil_giris")
+    st.markdown(f"""<div class='login-bg'>
+<div class='login-box'>
+<div class='login-logo'>
+  <div class='login-orb'>🎨</div>
+  <h1>{L['baslik']}</h1>
+  <p>{L['altyazi']}</p>
+</div>""", unsafe_allow_html=True)
+    dil_col, _ = st.columns([1, 2])
+    with dil_col:
+        ds = st.selectbox("", ["🇹🇷 Türkçe","🇬🇧 English"], index=0 if st.session_state.dil=='tr' else 1, key="dil_giris", label_visibility="collapsed")
     nd = 'tr' if '🇹🇷' in ds else 'en'
     if nd != st.session_state.dil:
         st.session_state.dil = nd; st.rerun()
-    st.markdown("---")
     t1, t2 = st.tabs([L['giris'], L['hesap_ac']])
     with t1:
         u = st.text_input(L['kul_adi'], key="g_k")
         p = st.text_input(L['sifre'], type="password", key="g_s")
-        if st.button(L['giris'], key="giris_btn"):
+        if st.button(L['giris'], key="giris_btn", use_container_width=True):
             if u in veri['kullanicilar'] and veri['kullanicilar'][u]['sifre_hash'] == sifre_hashle(p):
                 st.session_state.giris = True; st.session_state.kullanici = u; st.rerun()
             else:
@@ -294,7 +611,7 @@ if not st.session_state.giris:
         u2 = st.text_input(L['kul_adi'], key="k_u")
         p2 = st.text_input(L['sifre'], type="password", key="k_s1")
         p3 = st.text_input(L['sifre2'], type="password", key="k_s2")
-        if st.button(L['hesap_ac'], key="kayit_btn"):
+        if st.button(L['hesap_ac'], key="kayit_btn", use_container_width=True):
             if not u2 or not p2: st.error(L['bos'])
             elif len(p2) < 4: st.error(L['kisa'])
             elif p2 != p3: st.error(L['uyusmuyor'])
@@ -302,40 +619,68 @@ if not st.session_state.giris:
             else:
                 veri['kullanicilar'][u2] = {'sifre_hash':sifre_hashle(p2),'nftler':[],'para':500,'kayit_tarihi':str(datetime.datetime.now()),'id':rid()}
                 veri_kaydet(veri); st.success(L['hesap_ok']); st.balloons()
+    st.markdown("</div></div>", unsafe_allow_html=True)
     st.stop()
 
-# sidebar
+# ── Navbar ────────────────────────────────────────────────────────────────────
 aktif = veri['kullanicilar'][st.session_state.kullanici]
-with st.sidebar:
-    st.markdown(f"## 👤 {st.session_state.kullanici}")
-    st.markdown(f"💰 **{aktif['para']} TL**  |  🖼️ **{len(aktif['nftler'])} NFT**")
-    st.markdown("---")
-    ds = st.selectbox(L['dil'], ["🇹🇷 Türkçe","🇬🇧 English"], index=0 if st.session_state.dil=='tr' else 1)
-    nd = 'tr' if '🇹🇷' in ds else 'en'
-    if nd != st.session_state.dil:
-        st.session_state.dil = nd; st.rerun()
-    tema = st.selectbox(L['tema'], list(TEMALAR.keys()), index=list(TEMALAR.keys()).index(st.session_state.secili_tema))
-    if tema != st.session_state.secili_tema:
-        st.session_state.secili_tema = tema; st.rerun()
-    st.markdown("---")
-    sayfalar = [L['ana'],L['kol'],L['pazar_s'],L['zincir'],L['analiz'],L['dogrula_s'],L['profil']]
-    keys =     ['ana',  'kol', 'pazar',    'zincir', 'analiz', 'dogrula',    'profil']
-    for sb, sk in zip(sayfalar, keys):
-        if st.button(sb, key=f"sb_{sk}", use_container_width=True):
-            st.session_state.sayfa = sk; st.rerun()
-    st.markdown("---")
-    if st.button(L['cikis']):
-        st.session_state.giris = False; st.session_state.kullanici = None; st.rerun()
+sayfa = st.session_state.sayfa
 
+nav_items = [
+    ('ana', L['ana']), ('kol', L['kol']), ('pazar', L['pazar_s']),
+    ('zincir', L['zincir']), ('analiz', L['analiz']),
+    ('dogrula', L['dogrula_s']), ('profil', L['profil'])
+]
+
+def nav_link_html(key, label, current):
+    cls = "nb-link on" if current == key else "nb-link"
+    return f"<span class='{cls}' onclick=\"\" style='cursor:pointer'>{label}</span>"
+
+links_html = "".join(nav_link_html(k, l, sayfa) for k, l in nav_items)
+st.markdown(f"""
+<div class='nb'>
+  <div class='nb-logo'><div class='dot'></div> ArtGuard AI</div>
+  <div class='nb-links'>{links_html}</div>
+  <div class='nb-right'>
+    <div class='nb-pill'>👤 {st.session_state.kullanici} <span class='bal'>• {aktif['para']} TL</span></div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Navbar tıklama — Streamlit butonları navbar altında sıfır yükseklikte gizli
+with st.container():
+    st.markdown("<div style='display:flex;gap:4px;padding:6px 2rem;background:#080810;border-bottom:1px solid #1e1e32;flex-wrap:wrap'>", unsafe_allow_html=True)
+    cols = st.columns(len(nav_items) + 2)
+    for i, (sk, lb) in enumerate(nav_items):
+        with cols[i]:
+            btn_style = "primary" if sayfa == sk else "secondary"
+            if st.button(lb, key=f"nb_{sk}", use_container_width=True):
+                st.session_state.sayfa = sk; st.rerun()
+    with cols[-2]:
+        ds = st.selectbox("", ["🇹🇷","🇬🇧"], index=0 if st.session_state.dil=='tr' else 1, key="nb_dil", label_visibility="collapsed")
+        nd = 'tr' if ds == '🇹🇷' else 'en'
+        if nd != st.session_state.dil:
+            st.session_state.dil = nd; st.rerun()
+    with cols[-1]:
+        if st.button("🚪", key="nb_exit", use_container_width=True):
+            st.session_state.giris = False; st.session_state.kullanici = None; st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("<div class='wrap'>", unsafe_allow_html=True)
 sayfa = st.session_state.sayfa
 
 # ── ANA SAYFA ─────────────────────────────────────────────────────────────────
 if sayfa == 'ana':
-    st.markdown(f"<h2>{L['ana']}</h2>", unsafe_allow_html=True)
-    k1,k2,k3 = st.columns(3)
-    k1.metric(L['toplam_nft'], len(veri['bloklar']))
-    k2.metric(L['benim_nft'], len(aktif['nftler']))
-    k3.metric(L['pazarda'], len(veri['pazar']))
+    st.markdown(f"""<div class='ph'>
+<h1>{'Ana Sayfa' if st.session_state.dil=='tr' else 'Home'}</h1>
+<p>{'Eserlerini yükle, blockchain\'e kaydet, sertifika al.' if st.session_state.dil=='tr' else 'Upload artwork, save to blockchain, get your certificate.'}</p>
+</div>
+<div class='stats'>
+<div class='sc'><div class='sc-label'>{L['toplam_nft']}</div><div class='sc-val'>{len(veri['bloklar'])}</div></div>
+<div class='sc'><div class='sc-label'>{L['benim_nft']}</div><div class='sc-val'>{len(aktif['nftler'])}</div></div>
+<div class='sc'><div class='sc-label'>{L['pazarda']}</div><div class='sc-val'>{len(veri['pazar'])}</div></div>
+<div class='sc'><div class='sc-label'>{'Bakiye' if st.session_state.dil=='tr' else 'Balance'}</div><div class='sc-val'>{aktif['para']}<small> TL</small></div></div>
+</div>""", unsafe_allow_html=True)
     st.markdown("---")
     with st.expander(L['nasil']):
         t1,t2,t3 = st.tabs([L['blok_tek'],L['nft_surec'],L['telif']])
@@ -352,9 +697,10 @@ if sayfa == 'ana':
         f.seek(0); fbytes = f.read(); fhash = dosya_hash(fbytes)
         kopya = next((b for b in veri['bloklar'] if b['dosya_hash']==fhash), None)
         if kopya:
-            st.markdown(f"""<div style='background:#fdedec;border:2px solid #e74c3c;border-radius:14px;padding:18px 22px'>
-<b style='color:#c0392b;font-size:17px'>{L['zaten']}</b><br>
-<span style='color:#555;font-size:13px'>NFT #{kopya['numara']} — {kopya['isim']} | {kopya['sahip']}</span></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='err-box'>
+<div style='font-size:16px;font-weight:700;color:#ff4466'>{L['zaten']}</div>
+<div style='font-size:12px;color:#80506088;margin-top:4px'>NFT #{kopya['numara']} — {kopya['isim']} · {kopya['sahip']}</div>
+</div>""", unsafe_allow_html=True)
         else:
             sol,sag = st.columns([3,2])
             with sol:
@@ -362,33 +708,37 @@ if sayfa == 'ana':
             with sag:
                 f.seek(0); img = Image.open(f); rhash = resim_hash_al(img)
                 engel = False
-                st.markdown(f"""<div style='background:#f8f9fa;border-radius:12px;padding:12px 16px;margin-bottom:10px;border:1px solid #eaecf0'>
-<div style='font-size:11px;color:#888;font-weight:600;letter-spacing:.5px;margin-bottom:6px'>{L['gorsel_bilgi']}</div>
-<span style='background:white;border-radius:6px;padding:3px 9px;font-size:12px;border:1px solid #e0e0e0'>{img.width}×{img.height}px</span>
-<span style='background:white;border-radius:6px;padding:3px 9px;font-size:12px;border:1px solid #e0e0e0;margin-left:6px'>{img.mode}</span>
-<div style='margin-top:8px;font-size:11px;color:#aaa;font-family:monospace'>{fhash[:36]}...</div></div>""", unsafe_allow_html=True)
-                st.markdown(f"""<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>
-<div style='background:linear-gradient(135deg,{c1},{c2});width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px'>🤖</div>
-<div><div style='font-weight:700;font-size:14px'>{L['ai_baslik']}</div><div style='font-size:11px;color:#888'>{L['ai_alt']}</div></div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div class='img-info'>
+<div class='lbl'>{L['gorsel_bilgi']}</div>
+<span class='tag'>{img.width}×{img.height}px</span>
+<span class='tag'>{img.mode}</span>
+<div class='hash-txt'>{fhash[:40]}...</div>
+</div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style='display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 14px;background:var(--bg3);border-radius:12px;border:1px solid var(--bdr2)'>
+<div style='background:linear-gradient(135deg,{c1},{c2});width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0'>🤖</div>
+<div><div style='font-family:var(--font-head,sans-serif);font-weight:700;font-size:14px;color:#f0f0ff'>{L['ai_baslik']}</div><div style='font-size:11px;color:#50507888'>{L['ai_alt']}</div></div>
+</div>""", unsafe_allow_html=True)
                 if rhash and veri['bloklar']:
                     bi,bs = gercek_benzerlik(rhash, veri['bloklar'])
                     oz = round(100-bs,1); bs = round(bs,1)
-                    if bs > 85:   br,bm,bik,ba = '#e74c3c',L['engel'],'🚫','#fdedec'; engel=True
-                    elif bs > 65: br,bm,bik,ba = '#f39c12',L['uyari_benzer'],'⚠️','#fef9e7'
-                    else:         br,bm,bik,ba = '#27ae60',L['ozgun'],'✅','#eafaf1'
+                    if bs > 85:   br,bm,bik,bcls = '#ff4466',L['engel'],'🚫','ai-box ai-stop'; engel=True
+                    elif bs > 65: br,bm,bik,bcls = '#ffaa30',L['uyari_benzer'],'⚠️','ai-box ai-warn'
+                    else:         br,bm,bik,bcls = '#30d870',L['ozgun'],'✅','ai-box ai-ok'
                     bacik = f"NFT #{bi} {L['benzerlik_ile']}" if bs>65 else L['esleme_yok']
-                    st.markdown(f"""<div style='background:{ba};border:2px solid {br};border-radius:12px;padding:14px 16px'>
-<div style='font-size:11px;color:#888;margin-bottom:2px'>{L['oz_skor']}</div>
-<div style='font-size:28px;font-weight:800;color:{br}'>{oz}%</div>
-<div style='background:#fff8;border-radius:4px;height:7px;margin:6px 0;overflow:hidden'>
-<div style='height:100%;width:{oz}%;background:{br};border-radius:4px'></div></div>
-<div style='font-size:13px;font-weight:700;color:{br}'>{bik} {bm}</div>
-<div style='font-size:11px;color:#888;margin-top:3px'>{bacik} — {len(veri["bloklar"])} {L['tarand']}</div></div>""", unsafe_allow_html=True)
+                    st.markdown(f"""<div class='{bcls}'>
+<div class='ai-label'>{L['oz_skor']}</div>
+<div class='ai-score' style='color:{br}'>{oz}%</div>
+<div class='pbar-bg'><div class='pbar' style='width:{oz}%;background:{br}'></div></div>
+<div class='ai-status' style='color:{br}'>{bik} {bm}</div>
+<div style='font-size:11px;color:#50507888;margin-top:4px'>{bacik} — {len(veri["bloklar"])} {L['tarand']}</div>
+</div>""", unsafe_allow_html=True)
                 elif rhash:
-                    st.markdown(f"""<div style='background:#eaf4fb;border:2px solid #2980b9;border-radius:12px;padding:14px 16px'>
-<div style='font-size:28px;font-weight:800;color:#2980b9'>%100</div>
-<div style='font-size:13px;font-weight:700;color:#2980b9'>🌟 {L['ilk']}</div>
-<div style='font-size:11px;color:#888;margin-top:3px'>{L['ilk_acik']}</div></div>""", unsafe_allow_html=True)
+                    st.markdown(f"""<div class='ai-box ai-info'>
+<div class='ai-label'>{L['oz_skor']}</div>
+<div class='ai-score' style='color:#5090ff'>100%</div>
+<div class='ai-status' style='color:#5090ff'>🌟 {L['ilk']}</div>
+<div style='font-size:11px;color:#50507888;margin-top:4px'>{L['ilk_acik']}</div>
+</div>""", unsafe_allow_html=True)
             if not engel:
                 st.markdown("---")
                 ci1,ci2 = st.columns(2)
@@ -415,11 +765,12 @@ if sayfa == 'ana':
                         veri['islemler'].append({'tip':'mint','nft_no':yeni['numara'],'gonderen':None,'alan':st.session_state.kullanici,'fiyat':0,'zaman':zaman_str})
                         if veri_kaydet(veri):
                             st.session_state.dosya_ok = True
-                            st.markdown(f"""<div style='background:linear-gradient(135deg,#1abc9c,#27ae60);border-radius:14px;padding:20px;text-align:center'>
-<div style='font-size:28px'>🎉</div>
-<div style='color:white;font-size:17px;font-weight:700'>{L['nft_ok']}</div>
-<div style='color:#d5f5e3;font-size:13px;margin-top:4px'>Token #{yeni['numara']} — "{isim}" {L['eklendi']}</div>
-<div style='background:#ffffff33;border-radius:6px;padding:4px 10px;display:inline-block;margin-top:8px;font-size:11px;color:white;font-family:monospace'>PoW Nonce: {nonce_val} | {pow_h[:24]}...</div></div>""", unsafe_allow_html=True)
+                            st.markdown(f"""<div class='success-box'>
+<div style='font-size:32px'>🎉</div>
+<h3>{L['nft_ok']}</h3>
+<p>Token #{yeni['numara']} — "{isim}" {L['eklendi']}</p>
+<div class='pow'>PoW Nonce: {nonce_val} · {pow_h[:20]}...</div>
+</div>""", unsafe_allow_html=True)
                             st.balloons()
                             sb2 = BytesIO(); sertifika(yeni).save(sb2,'PNG'); sb2.seek(0)
                             st.download_button(L['sertifika'], sb2, f"certificate_{yeni['numara']}.png","image/png")
@@ -431,9 +782,13 @@ if sayfa == 'ana':
 
 # ── KOLEKSİYON ───────────────────────────────────────────────────────────────
 elif sayfa == 'kol':
-    st.markdown(f"<h2>{L['kol']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ph'><h1>{L['kol']}</h1></div>", unsafe_allow_html=True)
     if not aktif['nftler']:
-        st.markdown(f"<div style='text-align:center;padding:50px;background:#f8f9fa;border-radius:16px;border:2px dashed #dde1e7'><div style='font-size:48px'>🎨</div><div style='font-size:18px;font-weight:600;color:#555;margin-top:8px'>{L['kol_bos']}</div><div style='color:#888;font-size:14px'>{L['kol_bos2']}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"""<div style='text-align:center;padding:60px;background:var(--bg2,#0e0e1a);border-radius:20px;border:2px dashed #1e1e32'>
+<div style='font-size:52px;margin-bottom:12px'>🎨</div>
+<div style='font-size:18px;font-weight:700;color:#e8e8f8'>{L['kol_bos']}</div>
+<div style='color:#50507888;font-size:13px;margin-top:6px'>{L['kol_bos2']}</div>
+</div>""", unsafe_allow_html=True)
     else:
         cols = st.columns(3)
         for idx, nft_no in enumerate(aktif['nftler']):
@@ -441,15 +796,15 @@ elif sayfa == 'kol':
             with cols[idx % 3]:
                 if b.get('resim_veri'):
                     st.image(kirp(base64.b64decode(b['resim_veri'])), use_container_width=True)
-                dr = "#27ae60" if b['satista'] else "#3498db"
+                dr = "#30d870" if b['satista'] else "#5090ff"
                 dy = L['satista'] if b['satista'] else L['koleksiyonda']
-                st.markdown(f"""<div style='padding:6px 2px 8px'>
-<div style='font-size:15px;font-weight:700;color:#1a1a2e'>{b['isim']}</div>
-<div style='display:flex;gap:6px;flex-wrap:wrap;margin-top:4px'>
-<span style='background:#f0f4ff;color:#3498db;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600'>#{b['numara']}</span>
-<span style='background:#fff8e7;color:#e67e22;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600'>💰 {b['fiyat']} TL</span>
-<span style='color:{dr};font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;border:1px solid {dr}'>{dy}</span>
-</div></div>""", unsafe_allow_html=True)
+                bcls = "b-green" if b['satista'] else "b-gray"
+                st.markdown(f"""<div class='card-body'>
+<div class='card-name'>{b['isim']}</div>
+<span class='badge b-blue'>#{b['numara']}</span>
+<span class='badge b-gold'>💰 {b['fiyat']} TL</span>
+<span class='badge {bcls}'>{dy}</span>
+</div>""", unsafe_allow_html=True)
                 bc1,bc2 = st.columns(2)
                 with bc1:
                     if not b['satista']:
@@ -489,9 +844,13 @@ elif sayfa == 'kol':
 
 # ── PAZAR ─────────────────────────────────────────────────────────────────────
 elif sayfa == 'pazar':
-    st.markdown(f"<h2>{L['pazar_s']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ph'><h1>{L['pazar_s']}</h1></div>", unsafe_allow_html=True)
     if not veri['pazar']:
-        st.markdown(f"<div style='text-align:center;padding:50px;background:#f8f9fa;border-radius:16px;border:2px dashed #dde1e7'><div style='font-size:48px'>🏪</div><div style='font-size:18px;font-weight:600;color:#555;margin-top:8px'>{L['pazar_bos']}</div><div style='color:#888;font-size:14px'>{L['pazar_bos2']}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"""<div style='text-align:center;padding:60px;background:var(--bg2,#0e0e1a);border-radius:20px;border:2px dashed #1e1e32'>
+<div style='font-size:52px;margin-bottom:12px'>🏪</div>
+<div style='font-size:18px;font-weight:700;color:#e8e8f8'>{L['pazar_bos']}</div>
+<div style='color:#50507888;font-size:13px;margin-top:6px'>{L['pazar_bos2']}</div>
+</div>""", unsafe_allow_html=True)
     else:
         cols = st.columns(3)
         for idx, nft_no in enumerate(veri['pazar']):
@@ -501,11 +860,12 @@ elif sayfa == 'pazar':
                     st.image(kirp(base64.b64decode(b['resim_veri'])), use_container_width=True)
                 kendi = b['sahip'] == st.session_state.kullanici
                 yeter = aktif['para'] >= b['fiyat']
-                st.markdown(f"""<div style='padding:6px 2px 8px'>
-<div style='font-size:15px;font-weight:700;color:#1a1a2e'>{b['isim']}</div>
-<div style='font-size:12px;color:#888;margin-top:2px'>{L['senin'] if kendi else f"👤 {b['sahip']}"}</div>
-<div style='font-size:22px;font-weight:800;color:#e67e22;margin-top:4px'>💰 {b['fiyat']} TL</div>
-{"" if kendi or yeter else f"<div style='font-size:11px;color:#e74c3c'>{L['bakiye_yok']}</div>"}</div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div class='card-body'>
+<div class='card-name'>{b['isim']}</div>
+<div style='font-size:12px;color:#50507888;margin-bottom:6px'>{L['senin'] if kendi else f"👤 {b['sahip']}"}</div>
+<span class='badge b-gold' style='font-size:14px;padding:4px 12px'>💰 {b['fiyat']} TL</span>
+{"" if kendi or yeter else f"<div style='font-size:11px;color:#ff4466;margin-top:5px'>{L['bakiye_yok']}</div>"}
+</div>""", unsafe_allow_html=True)
                 if not kendi:
                     if st.button(L['satin_al'], key=f"al_{nft_no}", use_container_width=True):
                         if yeter:
@@ -525,20 +885,23 @@ elif sayfa == 'pazar':
 
 # ── BLOCKCHAIN ────────────────────────────────────────────────────────────────
 elif sayfa == 'zincir':
-    st.markdown(f"<h2>{L['zincir']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ph'><h1>{L['zincir']}</h1></div>", unsafe_allow_html=True)
     if not veri['bloklar']:
         st.info(L['blok_yok'])
     else:
-        k1,k2,k3 = st.columns(3)
-        k1.metric(L['toplam_blok'], len(veri['bloklar']))
-        k2.metric(L['zincir_gecerli'], "✅")
-        k3.metric("Son Hash", veri['bloklar'][-1]['blok_hash'][:12]+"...")
-        st.markdown("---")
+        st.markdown(f"""<div class='stats'>
+<div class='sc'><div class='sc-label'>{L['toplam_blok']}</div><div class='sc-val'>{len(veri['bloklar'])}</div></div>
+<div class='sc'><div class='sc-label'>{L['zincir_gecerli']}</div><div class='sc-val' style='color:#30d870'>✓</div></div>
+<div class='sc'><div class='sc-label'>Son Hash</div><div class='sc-val' style='font-size:1rem;font-family:monospace;color:#5090ff'>{veri['bloklar'][-1]['blok_hash'][:14]}...</div></div>
+</div>""", unsafe_allow_html=True)
         arama = st.number_input(L['blok_ara'], min_value=0, max_value=len(veri['bloklar'])-1, value=0)
         b = veri['bloklar'][arama]
-        st.markdown(f"""<div style='background:#f8f9fa;padding:1rem;border-radius:10px;border-left:4px solid {c1}'>
+        st.markdown(f"""<div class='blk-info'>
 <h3>Block #{b['numara']} — {b['isim']}</h3>
-Sahip: {b['sahip']} | Tarih: {b['zaman'][:19]} | Fiyat: {b['fiyat']} TL | Nonce: {b.get('nonce','—')}
+<span class='badge b-blue'>👤 {b['sahip']}</span>
+<span class='badge b-gray'>📅 {b['zaman'][:10]}</span>
+<span class='badge b-gold'>💰 {b['fiyat']} TL</span>
+<span class='badge b-gray'>Nonce: {b.get('nonce','—')}</span>
 </div>""", unsafe_allow_html=True)
         st.code(f"Blok Hash : {b['blok_hash']}\nÖnceki    : {b['onceki_hash'] or 'Genesis'}\nDosya     : {b['dosya_hash']}\npHash     : {b.get('perceptual_hash','—')}", language=None)
         st.markdown("---")
@@ -552,14 +915,15 @@ Sahip: {b['sahip']} | Tarih: {b['zaman'][:19]} | Fiyat: {b['fiyat']} TL | Nonce:
                 if i > 0 and b['onceki_hash'] != veri['bloklar'][i-1]['blok_hash']:
                     st.error(f"Block #{b['numara']} hash mismatch!"); sorun = True
             if not sorun:
-                st.markdown(f"<div style='background:#eafaf1;border:2px solid #27ae60;border-radius:10px;padding:14px;text-align:center'><b style='color:#1e8449;font-size:16px'>{L['zincir_ok']}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#071a10;border:1.5px solid #1a5a30;border-radius:12px;padding:14px;text-align:center'><b style='color:#30d870;font-size:16px'>{L['zincir_ok']}</b></div>", unsafe_allow_html=True)
 
 # ── ANALİZ ────────────────────────────────────────────────────────────────────
 elif sayfa == 'analiz':
-    st.markdown(f"<h2>{L['analiz']}</h2>", unsafe_allow_html=True)
-    st.markdown(f"""<div style='background:linear-gradient(135deg,#1f2937,#374151);border-radius:12px;padding:16px 20px;margin-bottom:18px'>
-<b style='color:#a78bfa;font-size:15px'>{L['blok_nasil']}</b>
-<p style='color:#d1d5db;font-size:13px;margin:6px 0 0'>{L['blok_acik']}</p></div>""", unsafe_allow_html=True)
+    st.markdown(f"<div class='ph'><h1>{L['analiz']}</h1></div>", unsafe_allow_html=True)
+    st.markdown(f"""<div style='background:#0d0d20;border:1px solid #1e1e3a;border-radius:14px;padding:16px 20px;margin-bottom:20px'>
+<div style='font-size:14px;font-weight:700;color:#a090ff;margin-bottom:6px'>{L['blok_nasil']}</div>
+<div style='color:#7070a0;font-size:13px'>{L['blok_acik']}</div>
+</div>""", unsafe_allow_html=True)
     fig = blockchain_gorseli(veri['bloklar'])
     canvas = FigureCanvasAgg(fig); canvas.draw()
     buf = BytesIO(); fig.savefig(buf, format='png', dpi=140, bbox_inches='tight'); buf.seek(0)
@@ -591,38 +955,35 @@ elif sayfa == 'analiz':
 
 # ── DOĞRULAMA ─────────────────────────────────────────────────────────────────
 elif sayfa == 'dogrula':
-    st.markdown(f"<h2>{L['dog_baslik']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ph'><h1>{L['dog_baslik']}</h1></div>", unsafe_allow_html=True)
     yukle_dog = st.file_uploader(L['dog_yukle'], type=['jpg','jpeg','png','pdf'], key="dog_yukle")
     if yukle_dog:
         icerik = yukle_dog.getvalue()
         fh = dosya_hash(icerik)
-        st.markdown(f"""<div style='background:#f8f9fa;padding:1rem;border-radius:10px;border-left:4px solid {c1};margin-bottom:12px'>
-<b style='font-size:15px'>{L['dosya_bilgi']}</b><br><br>
-📄 <b>{yukle_dog.name}</b> &nbsp;|&nbsp; {round(len(icerik)/1024,1)} KB<br>
-<span style='font-family:monospace;font-size:12px;color:#555'>SHA-256: {fh}</span>""", unsafe_allow_html=True)
-        if yukle_dog.type.startswith('image'):
-            ph = phash_str(icerik)
-            st.markdown(f"<br><span style='font-family:monospace;font-size:12px;color:#888'>{L['alg_hash']}: {ph}</span>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        phash_val = phash_str(icerik) if yukle_dog.type.startswith('image') else None
+        st.markdown(f"""<div class='blk-info' style='margin-bottom:14px'>
+<h3>📄 {yukle_dog.name}</h3>
+<span class='badge b-gray'>{round(len(icerik)/1024,1)} KB</span>
+<div style='font-family:monospace;font-size:11px;color:#50507888;margin-top:8px;word-break:break-all'>SHA-256: {fh}</div>
+{f"<div style='font-family:monospace;font-size:11px;color:#50507888;margin-top:4px'>{L['alg_hash']}: {phash_val}</div>" if phash_val else ""}
+</div>""", unsafe_allow_html=True)
         bulunan = [(i, b) for i,b in enumerate(veri['bloklar']) if b['dosya_hash']==fh]
         if bulunan:
             st.success(L['dog_bulundu'].format(count=len(bulunan)))
             for i,b in bulunan:
-                st.write(f"**Block #{i}:** {b['isim']} — {b['sahip']} — {b['zaman'][:19]}")
+                st.markdown(f"<div class='blk-row'><strong>Block #{i}</strong> — {b['isim']} · {b['sahip']} · {b['zaman'][:19]}</div>", unsafe_allow_html=True)
         else:
             st.warning(L['dog_yok'])
         if yukle_dog.type.startswith('image') and veri['bloklar']:
             img_dog = Image.open(BytesIO(icerik))
             rh_dog = resim_hash_al(img_dog)
-            st.markdown("---")
-            st.markdown(f"### {L['gorsel_analiz']}")
+            st.markdown(f"<div class='div'></div><h3>{L['gorsel_analiz']}</h3>", unsafe_allow_html=True)
             m1,m2,m3 = st.columns(3)
             m1.metric(L['boyutlar'], f"{img_dog.width}×{img_dog.height}")
             m2.metric(L['dosya_boyut'], f"{round(len(icerik)/1024/1024,2)} MB")
             bi_d, bs_d = gercek_benzerlik(rh_dog, veri['bloklar'])
             m3.metric(L['benzerlik_skoru'], f"{round(bs_d,1)}%")
             st.image(img_dog, use_container_width=True)
-            # tüm NFT'lere karşı gerçek benzerlik bar chart
             skorlar = []
             for i,b in enumerate(veri['bloklar']):
                 rh2 = b.get('resim_hash')
@@ -638,21 +999,22 @@ elif sayfa == 'dogrula':
             if skorlar:
                 st.markdown(f"**{L['benzer_nftler']}:**")
                 for s,i,isim in skorlar[:5]:
-                    renk = '#e74c3c' if s>85 else ('#f39c12' if s>65 else '#27ae60')
-                    st.markdown(f"""<div style='margin:4px 0;display:flex;align-items:center;gap:10px'>
-<span style='min-width:140px;font-size:13px'>NFT #{i}: {isim[:18]}</span>
-<div style='flex:1;background:#eee;border-radius:4px;height:12px;overflow:hidden'>
-<div style='height:100%;width:{int(s)}%;background:{renk};border-radius:4px'></div></div>
-<span style='font-size:13px;font-weight:700;color:{renk};min-width:48px'>{s:.1f}%</span></div>""", unsafe_allow_html=True)
+                    renk = '#ff4466' if s>85 else ('#ffaa30' if s>65 else '#30d870')
+                    st.markdown(f"""<div class='sim-row'>
+<span class='sim-name'>NFT #{i}: {isim[:16]}</span>
+<div class='sim-bar-bg'><div class='sim-bar' style='width:{int(s)}%;background:{renk}'></div></div>
+<span class='sim-pct' style='color:{renk}'>{s:.1f}%</span></div>""", unsafe_allow_html=True)
 
 # ── PROFİL ────────────────────────────────────────────────────────────────────
 elif sayfa == 'profil':
-    st.markdown(f"<h2>{L['profil']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ph'><h1>{L['profil']}</h1></div>", unsafe_allow_html=True)
     p1,p2 = st.columns([1,2])
     with p1:
-        st.markdown(f"<div style='background:linear-gradient(135deg,{c1},{c2});border-radius:50%;width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto'>👤</div>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='text-align:center'>{st.session_state.kullanici}</h3>", unsafe_allow_html=True)
-        st.caption(f"{L['uye']}: {aktif['kayit_tarihi'][:10]}")
+        st.markdown(f"""<div style='text-align:center;margin-bottom:16px'>
+<div style='background:linear-gradient(135deg,{c1},{c2});border-radius:18px;width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto;box-shadow:0 8px 24px {c1}44'>👤</div>
+<h2 style='margin-top:12px;font-family:Syne,sans-serif'>{st.session_state.kullanici}</h2>
+<p style='color:#50507888;font-size:12px'>{L['uye']}: {aktif['kayit_tarihi'][:10]}</p>
+</div>""", unsafe_allow_html=True)
     with p2:
         st.metric(L['bakiye'], f"{aktif['para']} TL")
         st.metric(L['benim_nft'], len(aktif['nftler']))
@@ -669,5 +1031,5 @@ elif sayfa == 'profil':
                 ikon = {'mint':'🌱','transfer':'🔄','satis':'💸'}.get(i['tip'],'📋')
                 st.write(f"{ikon} **{i['tip'].upper()}** — NFT #{i['nft_no']} — {i['zaman'][:16]}")
 
-st.markdown("---")
-st.caption("ArtGuard AI | TÜBİTAK 4006 Projesi")
+st.markdown("</div>", unsafe_allow_html=True)  # wrap kapat
+st.markdown("<div style='text-align:center;padding:24px;font-size:12px;color:#30304888'>ArtGuard AI · TÜBİTAK 4006 Projesi</div>", unsafe_allow_html=True)
