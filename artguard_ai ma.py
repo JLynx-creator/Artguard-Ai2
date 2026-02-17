@@ -236,9 +236,29 @@ css_style += ".main .block-container{background:white;border-radius:20px;padding
 css_style += "h1{color:#2c3e50;text-align:center;}"
 css_style += "h2{color:#34495e;border-bottom:2px solid " + c1 + ";padding-bottom:0.5rem;}"
 css_style += ".stButton>button{background:linear-gradient(90deg," + c1 + "," + c2 + ");color:white;border-radius:20px;padding:0.6rem 2rem;border:none;}"
-css_style += ".nft-card{background:white;border-radius:15px;padding:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1);margin-bottom:20px;}"
+css_style += ".nft-kart{background:#f8f9fa;border-radius:12px;padding:12px;border:1px solid #e0e0e0;margin-bottom:10px;}"
+css_style += ".nft-kart img{border-radius:8px;}"
 css_style += "</style>"
 st.markdown(css_style, unsafe_allow_html=True)
+
+def resmi_kirp_boyutlandir(resim_bytes, hedef_w=300, hedef_h=300):
+    try:
+        img = Image.open(BytesIO(resim_bytes)).convert("RGB")
+        oran = min(hedef_w / img.width, hedef_h / img.height)
+        yeni_w = int(img.width * oran)
+        yeni_h = int(img.height * oran)
+        img = img.resize((yeni_w, yeni_h), Image.LANCZOS)
+        zemin = Image.new("RGB", (hedef_w, hedef_h), (248, 249, 250))
+        x = (hedef_w - yeni_w) // 2
+        y = (hedef_h - yeni_h) // 2
+        zemin.paste(img, (x, y))
+        buf = BytesIO()
+        zemin.save(buf, format='PNG')
+        buf.seek(0)
+        return buf.read()
+    except Exception as e:
+        print(f"Resim boyutlama hatasi: {e}")
+        return resim_bytes
 
 def file_hash_calc(file_bytes):
     try:
@@ -293,55 +313,110 @@ def similarity_check(new_img_hash):
 
 def blockchain_gorsel_olustur():
     try:
-        fig, ax = plt.subplots(figsize=(14, 10))
-        ax.set_xlim(0, 12)
-        ax.set_ylim(0, 12)
-        ax.axis('off')
-        
         blok_sayisi = len(veri['bloklar'])
+        max_goster = min(blok_sayisi, 5)
+        
         if blok_sayisi == 0:
-            ax.text(6, 6, "Henüz blok yok", ha='center', va='center', fontsize=18, weight='bold')
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.axis('off')
+            ax.text(0.5, 0.5, "Henüz hiç NFT oluşturulmadı.\nAna sayfadan ilk NFT'yi ekle!",
+                    ha='center', va='center', fontsize=16, color='#7f8c8d',
+                    transform=ax.transAxes)
+            fig.patch.set_facecolor('#f8f9fa')
             return fig
         
-        max_goster = min(blok_sayisi, 6)
-        y_pos = 10
+        # Her blok için yükseklik hesapla
+        blok_yukseklik = 2.2
+        ok_yukseklik = 0.7
+        toplam_yukseklik = max_goster * blok_yukseklik + (max_goster - 1) * ok_yukseklik + 2
+        
+        fig, ax = plt.subplots(figsize=(13, toplam_yukseklik))
+        fig.patch.set_facecolor('#f0f4f8')
+        ax.set_facecolor('#f0f4f8')
+        ax.axis('off')
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, toplam_yukseklik)
+        
+        # başlık
+        ax.text(5, toplam_yukseklik - 0.5,
+                "NFT Blockchain Zinciri — Her blok bir öncekine bağlı",
+                ha='center', va='center', fontsize=13, color='#2c3e50',
+                style='italic')
+        
+        y = toplam_yukseklik - 1.3
         
         for i in range(max_goster):
             blok = veri['bloklar'][i]
             
+            # genesis blok farklı renk
             if i == 0:
-                renk = '#27ae60'
-                border_renk = '#229954'
+                bg_renk = '#1abc9c'
+                kenar_renk = '#16a085'
+                etiket = "🌱 İLK BLOK (Genesis)"
             else:
-                renk = '#3498db'
-                border_renk = '#2980b9'
+                bg_renk = '#3498db'
+                kenar_renk = '#2980b9'
+                etiket = f"🔗 BLOK #{blok['numara']}"
             
-            rect = patches.Rectangle((2, y_pos), 8, 1.2, linewidth=3, edgecolor=border_renk, facecolor=renk, alpha=0.8)
-            ax.add_patch(rect)
+            # blok dikdörtgeni - gölge efekti
+            golge = patches.FancyBboxPatch((0.6, y - blok_yukseklik + 0.15), 8.85, blok_yukseklik - 0.15,
+                                            boxstyle="round,pad=0.05", linewidth=0,
+                                            facecolor='#00000022')
+            ax.add_patch(golge)
             
-            ax.text(2.5, y_pos + 0.8, f"🔗 BLOK #{blok['numara']}", fontsize=12, weight='bold', color='white')
-            ax.text(2.5, y_pos + 0.5, f"👤 {blok['sahip'][:12]}...", fontsize=10, color='white')
-            ax.text(2.5, y_pos + 0.2, f"💰 {blok['fiyat']} TL", fontsize=10, color='white')
+            # ana blok
+            blok_rect = patches.FancyBboxPatch((0.5, y - blok_yukseklik + 0.2), 8.8, blok_yukseklik - 0.2,
+                                                boxstyle="round,pad=0.05", linewidth=2,
+                                                edgecolor=kenar_renk, facecolor=bg_renk)
+            ax.add_patch(blok_rect)
             
-            ax.text(6, y_pos + 0.8, f"📅 {blok['zaman'][:10]}", fontsize=9, color='white')
-            ax.text(6, y_pos + 0.5, f"🔐 {blok['blok_hash'][:14]}...", fontsize=8, color='white')
-            ax.text(6, y_pos + 0.2, f"📁 {blok['dosya_hash'][:14]}...", fontsize=8, color='white')
+            # blok içi bilgiler - sol taraf
+            ax.text(1.0, y - 0.35, etiket, fontsize=11, weight='bold', color='white', va='center')
+            ax.text(1.0, y - 0.75, f"👤 Sahip: {blok['sahip']}", fontsize=9, color='#ecf0f1', va='center')
+            ax.text(1.0, y - 1.05, f"🖼️  Eser: {blok['isim']}", fontsize=9, color='#ecf0f1', va='center')
+            ax.text(1.0, y - 1.35, f"💰 Fiyat: {blok['fiyat']} TL   📅 {blok['zaman'][:10]}", fontsize=8.5, color='#ecf0f1', va='center')
             
-            if i > 0:
-                ax.annotate('', xy=(6, y_pos + 1.2), xytext=(6, y_pos + 2.2),
-                           arrowprops=dict(arrowstyle='->', lw=3, color='#e74c3c', alpha=0.7))
+            # blok içi bilgiler - sağ taraf (hash bilgisi)
+            ax.text(9.2, y - 0.5, f"Hash:", fontsize=7.5, color='#bde0ff', va='center', ha='right')
+            ax.text(9.2, y - 0.75, f"{blok['blok_hash'][:18]}...", fontsize=7, color='#ecf0f1', va='center', ha='right', family='monospace')
+            if blok['numara'] > 0:
+                ax.text(9.2, y - 1.1, f"Önceki:", fontsize=7.5, color='#bde0ff', va='center', ha='right')
+                ax.text(9.2, y - 1.35, f"{blok['onceki_hash'][:18]}...", fontsize=7, color='#ecf0f1', va='center', ha='right', family='monospace')
+            else:
+                ax.text(9.2, y - 1.15, "Önceki: —", fontsize=7.5, color='#bde0ff', va='center', ha='right')
             
-            y_pos -= 2.0
+            # ok çiz (bloklar arası bağlantı)
+            if i < max_goster - 1:
+                ok_y_ust = y - blok_yukseklik + 0.2
+                ok_y_alt = ok_y_ust - ok_yukseklik
+                ax.annotate('',
+                    xy=(5, ok_y_alt + 0.05),
+                    xytext=(5, ok_y_ust),
+                    arrowprops=dict(
+                        arrowstyle='->', lw=2.5,
+                        color='#e74c3c',
+                        mutation_scale=20
+                    )
+                )
+                ax.text(5.4, (ok_y_ust + ok_y_alt) / 2, "önceki hash eşleşiyor",
+                        fontsize=7.5, color='#e74c3c', va='center', style='italic')
+            
+            y -= blok_yukseklik + ok_yukseklik
         
-        ax.set_title("🔗 BLOCKCHAIN GÖRSELLEŞTİRME", fontsize=20, weight='bold', pad=30, color='#2c3e50')
-        ax.add_patch(patches.Rectangle((0, 0), 12, 12, facecolor='#ecf0f1', alpha=0.3))
+        # fazladan blok varsa not
+        if blok_sayisi > max_goster:
+            ax.text(5, 0.3, f"+ {blok_sayisi - max_goster} blok daha var (son {max_goster} gösteriliyor)",
+                    ha='center', va='center', fontsize=9, color='#7f8c8d', style='italic')
         
+        plt.tight_layout(pad=0.5)
         return fig
         
     except Exception as e:
         print(f"Gorsel hatasi: {e}")
-        fig, ax = plt.subplots(figsize=(14, 10))
-        ax.text(7, 6, "Görsel oluşturulamadı", ha='center', va='center', fontsize=16)
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.axis('off')
+        ax.text(0.5, 0.5, "Görsel oluşturulamadı", ha='center', va='center',
+                fontsize=14, color='red', transform=ax.transAxes)
         return fig
 
 def sertifika_olustur(blok_data):
@@ -586,11 +661,15 @@ elif sayfa_secim == "NFT Koleksiyonum":
                     with satirda_kolonlar[kolon_no]:
                         if 'resim_veri' in nft_bilgi:
                             resim_bytes = b64.b64decode(nft_bilgi['resim_veri'])
-                            st.image(resim_bytes, use_column_width=True)
+                            resim_kucuk = resmi_kirp_boyutlandir(resim_bytes, 300, 300)
+                            st.image(resim_kucuk, use_container_width=True)
+                        else:
+                            st.image("https://via.placeholder.com/300x300?text=Resim+Yok", use_container_width=True)
                         
-                        st.markdown(f"### {nft_bilgi['isim']}")
-                        st.caption(f"Token #{nft_bilgi['numara']}")
-                        st.caption(f"💰 {nft_bilgi['fiyat']} TL")
+                        st.markdown(f"**{nft_bilgi['isim']}**")
+                        st.caption(f"Token #{nft_bilgi['numara']} | 💰 {nft_bilgi['fiyat']} TL")
+                        durum = "🟢 Satışta" if nft_bilgi['satista'] else "🔒 Koleksiyonda"
+                        st.caption(durum)
                         
                         buton_kolon1, buton_kolon2 = st.columns(2)
                         
@@ -688,9 +767,12 @@ elif sayfa_secim == "NFT Pazari":
                     with pazar_kolonlari[kolon]:
                         if 'resim_veri' in pazar_nft:
                             img_data = b64.b64decode(pazar_nft['resim_veri'])
-                            st.image(img_data, use_column_width=True)
+                            img_kucuk = resmi_kirp_boyutlandir(img_data, 300, 300)
+                            st.image(img_kucuk, use_container_width=True)
+                        else:
+                            st.image("https://via.placeholder.com/300x300?text=Resim+Yok", use_container_width=True)
                         
-                        st.markdown(f"### {pazar_nft['isim']}")
+                        st.markdown(f"**{pazar_nft['isim']}**")
                         st.caption(f"Satici: {pazar_nft['sahip']}")
                         st.markdown(f"### 💰 {pazar_nft['fiyat']} TL")
                         
@@ -779,7 +861,10 @@ elif sayfa_secim == "📊 Blockchain Analizi":
     st.title("📊 Blockchain Analizi")
     st.markdown("---")
     
-    st.subheader("🔗 Blockchain Görselleştirme")
+    st.info("🔗 **Blockchain Nedir?** Her NFT oluşturulduğunda bir 'blok' üretilir. Her blok, kendisinden önceki bloğun hash değerini içerir. Bu sayede zincir kırılamaz ve sahtecilik önlenir.")
+    
+    st.subheader("🔗 Blok Zinciri Görselleştirmesi")
+    st.caption("Aşağıda her NFT'nin blockchain üzerindeki kaydı görünüyor. Oklar, blokların birbirine nasıl bağlandığını gösteriyor.")
     
     try:
         fig = blockchain_gorsel_olustur()
@@ -792,7 +877,7 @@ elif sayfa_secim == "📊 Blockchain Analizi":
         st.image(img, use_container_width=True)
         
         buf.seek(0)
-        st.download_button("📥 Blockchain Görseli İndir", buf, "blockchain.png", "image/png")
+        st.download_button("📥 Blockchain Görselini İndir", buf, "blockchain.png", "image/png")
         
         plt.close(fig)
         
@@ -832,7 +917,8 @@ Dosya Hash: {son_blok['dosya_hash']}
         """)
         
         st.write("**Hash Bütünlüğü Kontrolü:**")
-        hash_kontrol = st.button("Hash Bütünlüğü Doğrula")
+        st.caption("Bu buton, her bloğun bir öncekiyle doğru bağlantıda olup olmadığını kontrol eder. Eğer hepsi uyumluysa zincir sağlamdır.")
+        hash_kontrol = st.button("🔍 Hash Bütünlüğü Doğrula")
         
         if hash_kontrol:
             bolum_sorunlu = False
